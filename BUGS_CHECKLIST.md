@@ -69,13 +69,14 @@ Mục tiêu: Khắc phục các lỗi về kết nối, giao diện và điều 
     - Button 14: L3 (`BTN_THUMBL`)
     - Button 15: R3 (`BTN_THUMBR`)
     Toàn bộ nút trên Android và Linux/macOS chuẩn 100%!
-- [x] **4.2. Triển khai Chuyển đổi Profile Thực sự (Xbox Wireless Controller vs Standard HID)**
-  - **Nguyên nhân:** Trước đây hai Profile chỉ lưu một giá trị số vào SharedPreferences, không hề unregister/re-register SDP record hay đổi descriptor.
-  - **Giải pháp:**
-    - Tạo `XboxLikeHidDescriptor.java`: khai báo SDP name `"Xbox Wireless Controller"`, provider `"Microsoft"`, tuần tự hóa nút chuẩn DirectInput Windows.
-    - Trong `StandardHidDescriptor.java`: khai báo SDP name `"Wiler Gamepad"`, provider `"Wiler"`, tuần tự hóa chuẩn Android/Universal.
-    - Thêm `switchProfile(int profile)` trong `BluetoothHidManager.java`: ngắt kết nối, `unregisterApp()`, và đăng ký lại `registerApp()` với SDP Settings và Descriptor của Profile mới.
-    - Thêm thông báo hướng dẫn người dùng: Sau khi đổi profile, cần Unpair và Pair lại trên host PC/Android để hệ điều hành nhận SDP cache mới.
+- [x] **4.2. Khắc phục Lỗi Chuyển Profile Bị Kẹt Phải Khởi Động Lại App**
+  - **Nguyên nhân:** Lệnh `hidDevice.unregisterApp()` trong Android HID stack là lời gọi IPC bất đồng bộ. Khi gọi `registerApp()` ngay lập tức trong cùng chu kỳ, Android Bluetooth daemon báo lỗi "Application already registered" và từ chối đăng ký, khiến proxy bị kẹt và mất kết nối cho đến khi app bị kill mở lại.
+  - **Giải pháp:** Triển khai chu trình Clean Proxy Re-initialization trong `BluetoothHidManager.java`:
+    1. Ngắt kết nối `disconnect()`.
+    2. Hủy đăng ký `unregisterApp()` nếu đang registered.
+    3. Đóng proxy cũ `bluetoothAdapter.closeProfileProxy(BluetoothProfile.HID_DEVICE, hidDevice)`.
+    4. Cập nhật tên Bluetooth adapter theo profile mới (`"Xbox Wireless Controller"` hoặc `"Wiler Gamepad"`).
+    5. Delay 400ms để Android daemon dọn dẹp sạch sẽ rồi gọi `init()` để lấy một instance proxy mới hoàn toàn và tự động đăng ký lại profile mới. Người dùng không còn cần phải khởi động lại app thủ công nữa!
 
 ---
 

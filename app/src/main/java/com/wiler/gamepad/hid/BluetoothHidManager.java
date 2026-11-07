@@ -11,6 +11,8 @@ import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.core.content.ContextCompat;
@@ -36,6 +38,7 @@ public class BluetoothHidManager {
 
     private final Context context;
     private final BluetoothAdapter bluetoothAdapter;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Listener listener;
     private GamepadState currentState;
 
@@ -159,20 +162,59 @@ public class BluetoothHidManager {
         prefs.setProfile(newProfile);
         Log.i(TAG, "switchProfile requested to: " + newProfile);
 
-        if (hidDevice != null && hasPermissions()) {
-            disconnect();
-            if (isAppRegistered) {
-                try {
-                    hidDevice.unregisterApp();
-                } catch (Exception e) {
-                    Log.w(TAG, "Error unregistering app on switchProfile", e);
-                }
-                isAppRegistered = false;
-            }
-            registerHidApp();
-            return true;
+        if (!hasPermissions() || bluetoothAdapter == null) {
+            return false;
         }
-        return false;
+
+        // 1. Disconnect any active connection
+        disconnect();
+
+        // 2. Unregister existing app if registered
+        if (hidDevice != null && isAppRegistered) {
+            try {
+                hidDevice.unregisterApp();
+            } catch (Exception e) {
+                Log.w(TAG, "Error during unregisterApp on switchProfile", e);
+            }
+        }
+
+        // 3. Fully close existing proxy so Android OS daemon resets the HID service state
+        if (hidDevice != null) {
+            try {
+                bluetoothAdapter.closeProfileProxy(BluetoothProfile.HID_DEVICE, hidDevice);
+            } catch (Exception e) {
+                Log.w(TAG, "Error closing profile proxy on switchProfile", e);
+            }
+            hidDevice = null;
+        }
+
+        isProxyBound = false;
+        isAppRegistered = false;
+        connectedDevice = null;
+
+        if (listener != null) {
+            listener.onHidProxyStatusChanged(false);
+            listener.onAppRegistrationChanged(false);
+        }
+
+        // 4. Update Bluetooth Adapter local name to match new profile
+        try {
+            String targetBtName = (newProfile == PreferencesManager.PROFILE_XBOX_LIKE)
+                    ? "Xbox Wireless Controller"
+                    : "Wiler Gamepad";
+            bluetoothAdapter.setName(targetBtName);
+            Log.i(TAG, "Updated Bluetooth adapter name to: " + targetBtName);
+        } catch (Exception e) {
+            Log.w(TAG, "Could not set adapter name on profile switch", e);
+        }
+
+        // 5. Clean re-initialization of proxy after 400ms delay (avoids race condition in OS daemon)
+        mainHandler.postDelayed(() -> {
+            Log.i(TAG, "Reinitializing HID proxy with new profile...");
+            init();
+        }, 400L);
+
+        return true;
     }
 
     public byte[] buildReport(GamepadState state) {

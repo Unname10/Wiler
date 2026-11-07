@@ -24,17 +24,17 @@
   //   null                         -> không dùng
   const HAT = 9;
   const BUTTON_MAP = [
-    0, 1, 2, 3,                                  // A B X Y
-    4, 5,                                        // LB RB
-    { axis: 3, min: -1, max: 1, btn: 6 },        // LT
-    { axis: 4, min: -1, max: 1, btn: 7 },        // RT
-    8, 9,                                        // Back Start
-    10, 11,                                      // L3 R3
+    0, 1, 3, 4,                                  // A B X Y
+    6, 7,                                        // LB RB
+    { axis: 3, min: -1, max: 1, btn: 8 },        // LT
+    { axis: 4, min: -1, max: 1, btn: 9 },        // RT
+    10, 11,                                      // Back Start
+    13, 14,                                      // L3 R3
     { hat: HAT, dirs: [7, 0, 1] },               // D-pad lên
     { hat: HAT, dirs: [3, 4, 5] },               // D-pad xuống
     { hat: HAT, dirs: [5, 6, 7] },               // D-pad trái
     { hat: HAT, dirs: [1, 2, 3] },               // D-pad phải
-    null,                                        // Guide
+    12,                                          // Guide
   ];
 
   // Trục chuẩn: 0 LX, 1 LY, 2 RX, 3 RY. Số n = trục thô thứ n.

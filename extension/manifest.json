@@ -5,7 +5,7 @@
   "description": "Biến tay cầm Wiler (generic HID) thành Standard Gamepad cho GeForce NOW trên trình duyệt.",
   "content_scripts": [
     {
-      "matches": ["https://play.geforcenow.com/*"],
+      "matches": ["https://play.geforcenow.com/*", "https://hardwaretester.com/*"],
       "js": ["inject.js"],
       "run_at": "document_start",
       "world": "MAIN",

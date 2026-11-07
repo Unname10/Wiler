@@ -262,7 +262,9 @@ public class HomeActivity extends AppCompatActivity implements BluetoothHidServi
         if (originalBluetoothName == null) {
             originalBluetoothName = adapter.getName();
         }
-        adapter.setName("Wiler Gamepad");
+        int profile = PreferencesManager.getInstance(this).getProfile();
+        String devName = (profile == PreferencesManager.PROFILE_XBOX_LIKE) ? "Xbox Wireless Controller" : "Wiler Gamepad";
+        adapter.setName(devName);
 
         Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120);
