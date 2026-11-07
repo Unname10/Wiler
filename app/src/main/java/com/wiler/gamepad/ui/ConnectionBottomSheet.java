@@ -205,6 +205,8 @@ public class ConnectionBottomSheet extends BottomSheetDialogFragment {
                 btnAction.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.bg_button_danger_outline));
                 btnAction.setTextColor(ContextCompat.getColor(requireContext(), R.color.status_disconnected));
                 btnAction.setOnClickListener(v -> {
+                    this.connectedDevice = null;
+                    populateBondedDevices();
                     if (listener != null) listener.onDisconnectDevice();
                 });
             } else {

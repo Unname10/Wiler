@@ -23,6 +23,8 @@ import com.wiler.gamepad.hid.BluetoothHidManager;
 import com.wiler.gamepad.hid.InputDispatcher;
 import com.wiler.gamepad.model.GamepadState;
 
+import java.util.concurrent.CopyOnWriteArrayList;
+
 /**
  * Started and Bound Service hosting the Bluetooth HID proxy, InputDispatcher,
  * and BroadcastReceivers for adapter state.
@@ -46,7 +48,7 @@ public class BluetoothHidService extends Service implements BluetoothHidManager.
     private BluetoothHidManager hidManager;
     private GamepadState gamepadState;
     private InputDispatcher inputDispatcher;
-    private ServiceCallback callback;
+    private final CopyOnWriteArrayList<ServiceCallback> callbacks = new CopyOnWriteArrayList<>();
 
     public class LocalBinder extends Binder {
         public BluetoothHidService getService() {
@@ -72,14 +74,25 @@ public class BluetoothHidService extends Service implements BluetoothHidManager.
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         filter.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
-        registerReceiver(bluetoothReceiver, filter);
+        filter.addAction("android.bluetooth.hiddevice.profile.action.CONNECTION_STATE_CHANGED");
+        filter.addAction(ACTION_DISCONNECT);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(bluetoothReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(bluetoothReceiver, filter);
+        }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && ACTION_DISCONNECT.equals(intent.getAction())) {
-            Log.d(TAG, "ACTION_DISCONNECT received from notification");
+            Log.d(TAG, "ACTION_DISCONNECT received in onStartCommand");
             disconnect();
+            stopForegroundNotification();
+            for (ServiceCallback cb : callbacks) {
+                cb.onConnectionStateChanged(null, android.bluetooth.BluetoothProfile.STATE_DISCONNECTED);
+            }
         }
         return START_STICKY;
     }
@@ -89,8 +102,22 @@ public class BluetoothHidService extends Service implements BluetoothHidManager.
         return binder;
     }
 
+    public void registerCallback(ServiceCallback callback) {
+        if (callback != null && !callbacks.contains(callback)) {
+            callbacks.add(callback);
+        }
+    }
+
+    public void unregisterCallback(ServiceCallback callback) {
+        if (callback != null) {
+            callbacks.remove(callback);
+        }
+    }
+
     public void setCallback(ServiceCallback callback) {
-        this.callback = callback;
+        if (callback != null) {
+            registerCallback(callback);
+        }
     }
 
     public GamepadState getGamepadState() {
@@ -118,9 +145,9 @@ public class BluetoothHidService extends Service implements BluetoothHidManager.
     }
 
     public void startForegroundNotification(String deviceName) {
-        Intent disconnectIntent = new Intent(this, BluetoothHidService.class);
-        disconnectIntent.setAction(ACTION_DISCONNECT);
-        PendingIntent disconnectPending = PendingIntent.getService(
+        Intent disconnectIntent = new Intent(ACTION_DISCONNECT);
+        disconnectIntent.setPackage(getPackageName());
+        PendingIntent disconnectPending = PendingIntent.getBroadcast(
                 this,
                 0,
                 disconnectIntent,
@@ -177,27 +204,54 @@ public class BluetoothHidService extends Service implements BluetoothHidManager.
 
     @Override
     public void onHidProxyStatusChanged(boolean available) {
-        if (callback != null) callback.onHidProxyStatusChanged(available);
+        for (ServiceCallback cb : callbacks) {
+            cb.onHidProxyStatusChanged(available);
+        }
     }
 
     @Override
     public void onAppRegistrationChanged(boolean registered) {
-        if (callback != null) callback.onAppRegistrationChanged(registered);
+        for (ServiceCallback cb : callbacks) {
+            cb.onAppRegistrationChanged(registered);
+        }
     }
 
     @Override
     public void onConnectionStateChanged(BluetoothDevice device, int state) {
         if (state == android.bluetooth.BluetoothProfile.STATE_CONNECTED) {
             inputDispatcher.sendCurrentState();
+        } else if (state == android.bluetooth.BluetoothProfile.STATE_DISCONNECTED) {
+            stopForegroundNotification();
         }
-        if (callback != null) callback.onConnectionStateChanged(device, state);
+        for (ServiceCallback cb : callbacks) {
+            cb.onConnectionStateChanged(device, state);
+        }
     }
 
     private final BroadcastReceiver bluetoothReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            if (intent == null) return;
             String action = intent.getAction();
-            if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
+            if (ACTION_DISCONNECT.equals(action)) {
+                Log.d(TAG, "ACTION_DISCONNECT received via BroadcastReceiver");
+                disconnect();
+                stopForegroundNotification();
+                for (ServiceCallback cb : callbacks) {
+                    cb.onConnectionStateChanged(null, android.bluetooth.BluetoothProfile.STATE_DISCONNECTED);
+                }
+            } else if ("android.bluetooth.hiddevice.profile.action.CONNECTION_STATE_CHANGED".equals(action)) {
+                int state = intent.getIntExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE,
+                        intent.getIntExtra(android.bluetooth.BluetoothProfile.EXTRA_STATE, android.bluetooth.BluetoothProfile.STATE_DISCONNECTED));
+                BluetoothDevice dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                Log.d(TAG, "HID CONNECTION_STATE_CHANGED intent: dev = " + dev + ", state = " + state);
+                if (state == android.bluetooth.BluetoothProfile.STATE_DISCONNECTED) {
+                    stopForegroundNotification();
+                }
+                for (ServiceCallback cb : callbacks) {
+                    cb.onConnectionStateChanged(dev, state);
+                }
+            } else if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
                 int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
                 if (state == BluetoothAdapter.STATE_OFF) {
                     Log.d(TAG, "Bluetooth turned OFF; cleaning up proxy");
@@ -209,8 +263,8 @@ public class BluetoothHidService extends Service implements BluetoothHidManager.
             } else if (BluetoothAdapter.ACTION_SCAN_MODE_CHANGED.equals(action)) {
                 int scanMode = intent.getIntExtra(BluetoothAdapter.EXTRA_SCAN_MODE, BluetoothAdapter.SCAN_MODE_NONE);
                 Log.d(TAG, "ACTION_SCAN_MODE_CHANGED: " + scanMode);
-                if (callback != null) {
-                    callback.onScanModeChanged(scanMode);
+                for (ServiceCallback cb : callbacks) {
+                    cb.onScanModeChanged(scanMode);
                 }
             }
         }

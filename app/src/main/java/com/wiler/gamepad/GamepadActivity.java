@@ -59,7 +59,7 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
             BluetoothHidService.LocalBinder binder = (BluetoothHidService.LocalBinder) service;
             hidService = binder.getService();
             isBound = true;
-            hidService.setCallback(GamepadActivity.this);
+            hidService.registerCallback(GamepadActivity.this);
 
             gamepadView.setGamepadState(hidService.getGamepadState());
 
@@ -82,10 +82,9 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_gamepad);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
         hideSystemUI();
-
-        setContentView(R.layout.activity_gamepad);
 
         gamepadView = findViewById(R.id.gamepadView);
         layoutDisconnectedOverlay = findViewById(R.id.layoutDisconnectedOverlay);
@@ -99,8 +98,16 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
         btnOverlayExit.setOnClickListener(v -> finish());
         btnOverlayRetry.setOnClickListener(v -> retryConnection());
 
-        // Bind Service
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                showQuickMenuDialog();
+            }
+        });
+
+        // Start service first so bind won't fail if service was killed
         Intent intent = new Intent(this, BluetoothHidService.class);
+        startService(intent);
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
     }
 
@@ -139,6 +146,17 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (gamepadView != null) {
+            PreferencesManager prefs = PreferencesManager.getInstance(this);
+            gamepadView.setDeadzone(prefs.getDeadzone());
+            gamepadView.setDynamicJoystick(prefs.isDynamicJoystick());
+            gamepadView.setButtonScale(prefs.getButtonScale());
+        }
+    }
+
+    @Override
     protected void onPause() {
         super.onPause();
         if (gamepadView != null) {
@@ -155,7 +173,7 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
         }
         if (isBound) {
             if (hidService != null) {
-                hidService.setCallback(null);
+                hidService.unregisterCallback(this);
             }
             unbindService(serviceConnection);
             isBound = false;
@@ -224,6 +242,11 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
                     @Override
                     public void onDynamicJoystickChanged(boolean enabled) {
                         gamepadView.setDynamicJoystick(enabled);
+                    }
+
+                    @Override
+                    public void onButtonScaleChanged(float scale) {
+                        gamepadView.setButtonScale(scale);
                     }
 
                     @Override

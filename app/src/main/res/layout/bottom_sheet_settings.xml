@@ -320,6 +320,92 @@
             </RelativeLayout>
         </LinearLayout>
 
+        <!-- Card Button Size Scale -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_card_dark"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:id="@+id/tvButtonScaleHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:text="Kích thước nút bấm"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/tvButtonScaleHeader"
+                    android:text="Button Scale"
+                    android:textColor="#889988"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/tvButtonScaleBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:background="@drawable/bg_badge_green"
+                    android:text="115%"
+                    android:textColor="#22C55E"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </RelativeLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tùy chỉnh độ lớn của các phím ảo (ABXY, D-pad, nút vai, và hai nút mũi tên)."
+                android:textColor="#889988"
+                android:textSize="12sp" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/sliderButtonScale"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:stepSize="5"
+                android:value="115"
+                android:valueFrom="80"
+                android:valueTo="140"
+                app:thumbColor="#22C55E"
+                app:trackColorActive="#22C55E"
+                app:trackColorInactive="#263326" />
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:text="Nhỏ (80%)"
+                    android:textColor="#667766"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:text="Lớn (140%)"
+                    android:textColor="#667766"
+                    android:textSize="11sp" />
+            </RelativeLayout>
+        </LinearLayout>
+
         <!-- Card Dynamic Joystick -->
         <LinearLayout
             android:layout_width="match_parent"

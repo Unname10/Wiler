@@ -93,7 +93,7 @@ public class HomeActivity extends AppCompatActivity implements BluetoothHidServi
             BluetoothHidService.LocalBinder binder = (BluetoothHidService.LocalBinder) service;
             hidService = binder.getService();
             isBound = true;
-            hidService.setCallback(HomeActivity.this);
+            hidService.registerCallback(HomeActivity.this);
 
             if (hasRequiredPermissions()) {
                 hidService.initHid();
@@ -151,18 +151,34 @@ public class HomeActivity extends AppCompatActivity implements BluetoothHidServi
             sheet.show(getSupportFragmentManager(), "settings_sheet");
         });
 
-        cardDiscoverableActionHome.setOnClickListener(v -> {
-            if (!isDiscoverable) {
-                makeDiscoverable();
-            } else {
-                setDiscoverableState(false, 0);
-            }
-        });
+        // "Bắt đầu ghép đôi" card & "Quản lý kết nối" button → open ConnectionBottomSheet
+        cardDiscoverableActionHome.setOnClickListener(v -> openConnectionSheet());
+        View btnManageConnections = findViewById(R.id.btnManageConnections);
+        if (btnManageConnections != null) {
+            btnManageConnections.setOnClickListener(v -> openConnectionSheet());
+        }
+    }
+
+    private void openConnectionSheet() {
+        ConnectionBottomSheet sheet = new ConnectionBottomSheet();
+        sheet.setListener(this);
+        sheet.setConnectedDevice(connectedDevice);
+        sheet.setDiscoverable(isDiscoverable);
+        activeConnectionSheet = sheet;
+        sheet.show(getSupportFragmentManager(), "connection_sheet");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        // Re-initialize HID proxy if it was dropped while in background
+        if (isBound && hidService != null && hasRequiredPermissions()) {
+            if (!hidService.getHidManager().isAvailable()) {
+                hidService.initHid();
+            }
+            connectedDevice = hidService.getHidManager().getConnectedDevice();
+            updateConnectionVisuals();
+        }
         if (hasRequiredPermissions()) {
             BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
             boolean btOn = adapter != null && adapter.isEnabled();
@@ -386,7 +402,7 @@ public class HomeActivity extends AppCompatActivity implements BluetoothHidServi
         }
         if (isBound) {
             if (hidService != null) {
-                hidService.setCallback(null);
+                hidService.unregisterCallback(this);
             }
             unbindService(serviceConnection);
             isBound = false;
@@ -476,6 +492,12 @@ public class HomeActivity extends AppCompatActivity implements BluetoothHidServi
     public void onDisconnectDevice() {
         if (hidService != null) {
             hidService.disconnect();
+            connectedDevice = null;
+            updateConnectionVisuals();
+            populateRecentDevices();
+            if (activeConnectionSheet != null) {
+                activeConnectionSheet.setConnectedDevice(null);
+            }
             Toast.makeText(this, "Đã ngắt kết nối", Toast.LENGTH_SHORT).show();
         }
     }

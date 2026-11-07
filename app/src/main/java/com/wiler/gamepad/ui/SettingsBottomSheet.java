@@ -26,6 +26,7 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
     public interface OnSettingsChangeListener {
         void onDeadzoneChanged(float deadzone);
         void onDynamicJoystickChanged(boolean enabled);
+        void onButtonScaleChanged(float scale);
         void onProfileChanged(int profile);
     }
 
@@ -36,6 +37,8 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
     private TextView tvDeadzoneBadge;
     private DeadzonePreviewView deadzonePreviewView;
     private Slider sliderDeadzone;
+    private TextView tvButtonScaleBadge;
+    private Slider sliderButtonScale;
     private SwitchMaterial switchDynamicJoystick;
     private ImageView btnCloseSettings;
 
@@ -65,6 +68,8 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
         tvDeadzoneBadge = view.findViewById(R.id.tvDeadzoneBadge);
         deadzonePreviewView = view.findViewById(R.id.deadzonePreviewView);
         sliderDeadzone = view.findViewById(R.id.sliderDeadzone);
+        tvButtonScaleBadge = view.findViewById(R.id.tvButtonScaleBadge);
+        sliderButtonScale = view.findViewById(R.id.sliderButtonScale);
         switchDynamicJoystick = view.findViewById(R.id.switchDynamicJoystick);
         btnCloseSettings = view.findViewById(R.id.btnCloseSettings);
 
@@ -92,6 +97,22 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
             prefs.setDeadzone(dzFloat);
             if (listener != null) {
                 listener.onDeadzoneChanged(dzFloat);
+            }
+        });
+
+        // Setup Button Scale
+        float buttonScale = prefs.getButtonScale();
+        int scalePercent = Math.round(buttonScale * 100f);
+        sliderButtonScale.setValue(scalePercent);
+        tvButtonScaleBadge.setText(String.format(Locale.US, "%d%%", scalePercent));
+
+        sliderButtonScale.addOnChangeListener((slider, value, fromUser) -> {
+            int intVal = Math.round(value);
+            float scaleFloat = intVal / 100f;
+            tvButtonScaleBadge.setText(String.format(Locale.US, "%d%%", intVal));
+            prefs.setButtonScale(scaleFloat);
+            if (listener != null) {
+                listener.onButtonScaleChanged(scaleFloat);
             }
         });
 

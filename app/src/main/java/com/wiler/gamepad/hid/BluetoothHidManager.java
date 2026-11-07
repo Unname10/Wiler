@@ -166,10 +166,31 @@ public class BluetoothHidManager {
 
     @SuppressLint("MissingPermission")
     public synchronized boolean disconnect() {
-        if (hidDevice == null || connectedDevice == null || !hasPermissions()) {
+        if (hidDevice == null || !hasPermissions()) {
             return false;
         }
-        return hidDevice.disconnect(connectedDevice);
+        boolean success = false;
+        if (connectedDevice != null) {
+            try {
+                success = hidDevice.disconnect(connectedDevice);
+                Log.i(TAG, "hidDevice.disconnect(connectedDevice) result: " + success);
+            } catch (Exception e) {
+                Log.e(TAG, "Error disconnecting connectedDevice", e);
+            }
+        }
+        try {
+            java.util.List<BluetoothDevice> devs = hidDevice.getConnectedDevices();
+            if (devs != null) {
+                for (BluetoothDevice d : devs) {
+                    hidDevice.disconnect(d);
+                    success = true;
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error disconnecting all connected devices", e);
+        }
+        connectedDevice = null;
+        return success;
     }
 
     @SuppressLint("MissingPermission")

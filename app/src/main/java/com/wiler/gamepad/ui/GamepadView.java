@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -15,7 +16,9 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
+import com.wiler.gamepad.R;
 import com.wiler.gamepad.model.GamepadState;
 import com.wiler.gamepad.model.InputMapper;
 import com.wiler.gamepad.model.PreferencesManager;
@@ -41,6 +44,8 @@ public class GamepadView extends View {
 
     private float deadzone = 0.10f;
     private boolean dynamicJoystick = true;
+    private float buttonScale = 1.15f;
+    private Drawable icSettings;
 
     // Control Type IDs
     private static final int CONTROL_NONE = 0;
@@ -80,6 +85,10 @@ public class GamepadView extends View {
     // Stick positions
     private float stickRadius = 140f;
     private float thumbRadius = 60f;
+
+    // Default Stick coordinates (anchor centers)
+    private float defaultLeftStickBaseX, defaultLeftStickBaseY;
+    private float defaultRightStickBaseX, defaultRightStickBaseY;
 
     // Left Stick coordinates
     private float leftStickBaseX, leftStickBaseY;
@@ -171,6 +180,9 @@ public class GamepadView extends View {
         PreferencesManager prefs = PreferencesManager.getInstance(getContext());
         this.deadzone = prefs.getDeadzone();
         this.dynamicJoystick = prefs.isDynamicJoystick();
+        this.buttonScale = prefs.getButtonScale();
+
+        this.icSettings = ContextCompat.getDrawable(getContext(), R.drawable.ic_settings);
     }
 
     public void setGamepadState(GamepadState state) {
@@ -190,6 +202,14 @@ public class GamepadView extends View {
         this.dynamicJoystick = dynamicJoystick;
     }
 
+    public void setButtonScale(float buttonScale) {
+        this.buttonScale = Math.max(0.70f, Math.min(buttonScale, 1.50f));
+        if (getWidth() > 0 && getHeight() > 0) {
+            calculateLayout(getWidth(), getHeight());
+            invalidate();
+        }
+    }
+
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
@@ -197,9 +217,10 @@ public class GamepadView extends View {
     }
 
     private void calculateLayout(int w, int h) {
-        float btnRadius = Math.min(w, h) * 0.07f;
+        float baseRadius = Math.min(w, h) * 0.075f;
+        float btnRadius = baseRadius * buttonScale;
         float btnDiameter = btnRadius * 2f;
-        stickRadius = Math.min(w, h) * 0.18f;
+        stickRadius = Math.min(w, h) * 0.17f * (0.85f + 0.15f * buttonScale);
         thumbRadius = stickRadius * 0.45f;
 
         // --- Left side ---
@@ -217,9 +238,11 @@ public class GamepadView extends View {
         setCircleRect(rectDpadDown, dpadCenterX, dpadCenterY + dpadSpacing, btnRadius);
         setCircleRect(rectDpadLeft, dpadCenterX - dpadSpacing, dpadCenterY, btnRadius);
 
-        // Left Stick
-        leftStickBaseX = w * 0.32f;
-        leftStickBaseY = h * 0.72f;
+        // Left Stick default & current
+        defaultLeftStickBaseX = w * 0.32f;
+        defaultLeftStickBaseY = h * 0.72f;
+        leftStickBaseX = defaultLeftStickBaseX;
+        leftStickBaseY = defaultLeftStickBaseY;
         leftStickThumbX = leftStickBaseX;
         leftStickThumbY = leftStickBaseY;
 
@@ -228,9 +251,13 @@ public class GamepadView extends View {
 
         // --- Center Cluster ---
         float centerTopY = h * 0.10f;
-        rectBack.set(w * 0.38f - 40f, centerTopY - 25f, w * 0.38f + 40f, centerTopY + 25f);
-        setCircleRect(rectGuide, w * 0.50f, centerTopY, btnRadius * 0.85f);
-        rectStart.set(w * 0.62f - 40f, centerTopY - 25f, w * 0.62f + 40f, centerTopY + 25f);
+        float arrowPillHalfW = Math.max(52f, btnRadius * 0.95f);
+        float arrowPillHalfH = Math.max(34f, btnRadius * 0.55f);
+        float guideRadius = btnRadius * 0.95f;
+
+        rectBack.set(w * 0.39f - arrowPillHalfW, centerTopY - arrowPillHalfH, w * 0.39f + arrowPillHalfW, centerTopY + arrowPillHalfH);
+        setCircleRect(rectGuide, w * 0.50f, centerTopY, guideRadius);
+        rectStart.set(w * 0.61f - arrowPillHalfW, centerTopY - arrowPillHalfH, w * 0.61f + arrowPillHalfW, centerTopY + arrowPillHalfH);
 
         // --- Right side ---
         // RB / RT
@@ -246,9 +273,11 @@ public class GamepadView extends View {
         setCircleRect(rectBtnA, abxyCenterX, abxyCenterY + abxySpacing, btnRadius);
         setCircleRect(rectBtnX, abxyCenterX - abxySpacing, abxyCenterY, btnRadius);
 
-        // Right Stick
-        rightStickBaseX = w * 0.68f;
-        rightStickBaseY = h * 0.72f;
+        // Right Stick default & current
+        defaultRightStickBaseX = w * 0.68f;
+        defaultRightStickBaseY = h * 0.72f;
+        rightStickBaseX = defaultRightStickBaseX;
+        rightStickBaseY = defaultRightStickBaseY;
         rightStickThumbX = rightStickBaseX;
         rightStickThumbY = rightStickBaseY;
 
@@ -333,7 +362,7 @@ public class GamepadView extends View {
         canvas.drawRoundRect(rect, rect.height() / 2f, rect.height() / 2f, btnStrokePaint);
 
         textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(rect.height() * 0.55f);
+        textPaint.setTextSize(rect.height() * 0.52f);
         float textY = rect.centerY() - ((textPaint.descent() + textPaint.ascent()) / 2);
         canvas.drawText(text, rect.centerX(), textY, textPaint);
     }
@@ -349,11 +378,21 @@ public class GamepadView extends View {
         btnStrokePaint.setColor(pressed ? Color.parseColor("#22C55E") : Color.parseColor("#2E3B2E"));
         canvas.drawCircle(cx, cy, radius, btnStrokePaint);
 
-        // Sun / Xbox icon glyph
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(radius * 1.0f);
-        float textY = cy - ((textPaint.descent() + textPaint.ascent()) / 2);
-        canvas.drawText("☼", cx, textY, textPaint);
+        // Center aligned Settings icon
+        if (icSettings != null) {
+            float iconSize = radius * 1.05f;
+            int half = Math.round(iconSize / 2f);
+            int icx = Math.round(cx);
+            int icy = Math.round(cy);
+            icSettings.setBounds(icx - half, icy - half, icx + half, icy + half);
+            icSettings.setTint(Color.WHITE);
+            icSettings.draw(canvas);
+        } else {
+            textPaint.setColor(Color.WHITE);
+            textPaint.setTextSize(radius * 1.0f);
+            float textY = cy - ((textPaint.descent() + textPaint.ascent()) / 2);
+            canvas.drawText("⚙", cx, textY, textPaint);
+        }
     }
 
     private void drawStick(Canvas canvas, float baseX, float baseY, float thumbX, float thumbY) {
@@ -427,31 +466,41 @@ public class GamepadView extends View {
         int control = hitTestButtons(x, y);
 
         if (control == CONTROL_NONE) {
-            // Check sticks
-            if (x < getWidth() * 0.5f) {
-                // Left half -> Left stick
-                control = CONTROL_STICK_LEFT;
-                leftStickActive = true;
-                if (dynamicJoystick) {
-                    leftStickBaseX = x;
-                    leftStickBaseY = y;
+            // Restrict joystick active zones:
+            // 1. Exclude top bar (y < h * 0.30f) where shoulder and center menu buttons reside.
+            // 2. Restrict to active radius around default stick centers.
+            float topBarExclusion = getHeight() * 0.30f;
+            float maxActiveRadius = stickRadius * 1.65f;
+
+            if (y >= topBarExclusion) {
+                float distToLeft = (float) Math.hypot(x - defaultLeftStickBaseX, y - defaultLeftStickBaseY);
+                float distToRight = (float) Math.hypot(x - defaultRightStickBaseX, y - defaultRightStickBaseY);
+
+                if (x < getWidth() * 0.5f && distToLeft <= maxActiveRadius) {
+                    control = CONTROL_STICK_LEFT;
+                    leftStickActive = true;
+                    if (dynamicJoystick) {
+                        leftStickBaseX = x;
+                        leftStickBaseY = y;
+                    }
+                    updateStick(true, x, y);
+                } else if (x >= getWidth() * 0.5f && distToRight <= maxActiveRadius) {
+                    control = CONTROL_STICK_RIGHT;
+                    rightStickActive = true;
+                    if (dynamicJoystick) {
+                        rightStickBaseX = x;
+                        rightStickBaseY = y;
+                    }
+                    updateStick(false, x, y);
                 }
-                updateStick(true, x, y);
-            } else {
-                // Right half -> Right stick
-                control = CONTROL_STICK_RIGHT;
-                rightStickActive = true;
-                if (dynamicJoystick) {
-                    rightStickBaseX = x;
-                    rightStickBaseY = y;
-                }
-                updateStick(false, x, y);
             }
         } else {
             activateControl(control);
         }
 
-        pointerToControl.put(pointerId, control);
+        if (control != CONTROL_NONE) {
+            pointerToControl.put(pointerId, control);
+        }
     }
 
     private void handlePointerMove(int pointerId, float x, float y) {
@@ -581,15 +630,19 @@ public class GamepadView extends View {
 
             case CONTROL_STICK_LEFT:
                 leftStickActive = false;
-                leftStickThumbX = leftStickBaseX;
-                leftStickThumbY = leftStickBaseY;
+                leftStickBaseX = defaultLeftStickBaseX;
+                leftStickBaseY = defaultLeftStickBaseY;
+                leftStickThumbX = defaultLeftStickBaseX;
+                leftStickThumbY = defaultLeftStickBaseY;
                 gamepadState.setLeftStick(0f, 0f);
                 break;
 
             case CONTROL_STICK_RIGHT:
                 rightStickActive = false;
-                rightStickThumbX = rightStickBaseX;
-                rightStickThumbY = rightStickBaseY;
+                rightStickBaseX = defaultRightStickBaseX;
+                rightStickBaseY = defaultRightStickBaseY;
+                rightStickThumbX = defaultRightStickBaseX;
+                rightStickThumbY = defaultRightStickBaseY;
                 gamepadState.setRightStick(0f, 0f);
                 break;
         }
@@ -647,10 +700,14 @@ public class GamepadView extends View {
         pointerToControl.clear();
         leftStickActive = false;
         rightStickActive = false;
-        leftStickThumbX = leftStickBaseX;
-        leftStickThumbY = leftStickBaseY;
-        rightStickThumbX = rightStickBaseX;
-        rightStickThumbY = rightStickBaseY;
+        leftStickBaseX = defaultLeftStickBaseX;
+        leftStickBaseY = defaultLeftStickBaseY;
+        rightStickBaseX = defaultRightStickBaseX;
+        rightStickBaseY = defaultRightStickBaseY;
+        leftStickThumbX = defaultLeftStickBaseX;
+        leftStickThumbY = defaultLeftStickBaseY;
+        rightStickThumbX = defaultRightStickBaseX;
+        rightStickThumbY = defaultRightStickBaseY;
 
         if (gamepadState != null) {
             gamepadState.resetAll();
