@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- Xbox & Dark Gaming Palette -->
+    <color name="bg_dark">#121212</color>
+    <color name="surface_dark">#1E1E1E</color>
+    <color name="card_dark">#252525</color>
+    <color name="xbox_green">#107C10</color>
+    <color name="xbox_green_glow">#20BA20</color>
+    <color name="text_primary">#F0F0F0</color>
+    <color name="text_secondary">#8E8E93</color>
+    <color name="status_connected">#107C10</color>
+    <color name="status_disconnected">#E81123</color>
+    
+    <!-- ABXY Button Colors -->
+    <color name="btn_a">#107C10</color>
+    <color name="btn_b">#E81123</color>
+    <color name="btn_x">#0078D7</color>
+    <color name="btn_y">#FFB900</color>
+</resources>
