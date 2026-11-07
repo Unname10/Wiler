@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Wiler Standard Gamepad Shim",
+  "version": "0.1.0",
+  "description": "Biến tay cầm Wiler (generic HID) thành Standard Gamepad cho GeForce NOW trên trình duyệt.",
+  "content_scripts": [
+    {
+      "matches": ["https://play.geforcenow.com/*"],
+      "js": ["inject.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true
+    }
+  ]
+}
