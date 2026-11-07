@@ -50,6 +50,12 @@
             android:screenOrientation="sensorLandscape" />
 
         <activity
+            android:name=".GamepadEditActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:exported="false"
+            android:screenOrientation="sensorLandscape" />
+
+        <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false" />

@@ -1,9 +1,12 @@
 package com.wiler.gamepad.ui;
 
+import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -16,6 +19,7 @@ import androidx.core.content.ContextCompat;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.slider.Slider;
 import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.wiler.gamepad.GamepadEditActivity;
 import com.wiler.gamepad.R;
 import com.wiler.gamepad.model.PreferencesManager;
 
@@ -29,12 +33,19 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
         void onButtonScaleChanged(float scale);
         void onVibrationChanged(boolean enabled);
         void onProfileChanged(int profile);
+        default void onLayoutChanged() {}
     }
 
     private LinearLayout cardProfileXbox;
     private LinearLayout cardProfileStandard;
     private ImageView ivCheckXbox;
     private ImageView ivCheckStandard;
+    private Button btnSheetPresetDefault;
+    private Button btnSheetPreset1;
+    private Button btnSheetPreset2;
+    private Button btnSheetPreset3;
+    private Button btnOpenLayoutEditor;
+    private int activeLayoutPreset = 0;
     private TextView tvDeadzoneBadge;
     private DeadzonePreviewView deadzonePreviewView;
     private Slider sliderDeadzone;
@@ -75,6 +86,11 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
         switchDynamicJoystick = view.findViewById(R.id.switchDynamicJoystick);
         switchVibration = view.findViewById(R.id.switchVibration);
         btnCloseSettings = view.findViewById(R.id.btnCloseSettings);
+        btnSheetPresetDefault = view.findViewById(R.id.btnSheetPresetDefault);
+        btnSheetPreset1 = view.findViewById(R.id.btnSheetPreset1);
+        btnSheetPreset2 = view.findViewById(R.id.btnSheetPreset2);
+        btnSheetPreset3 = view.findViewById(R.id.btnSheetPreset3);
+        btnOpenLayoutEditor = view.findViewById(R.id.btnOpenLayoutEditor);
 
         btnCloseSettings.setOnClickListener(v -> dismiss());
 
@@ -84,6 +100,20 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
 
         cardProfileXbox.setOnClickListener(v -> selectProfile(PreferencesManager.PROFILE_XBOX_LIKE));
         cardProfileStandard.setOnClickListener(v -> selectProfile(PreferencesManager.PROFILE_STANDARD_HID));
+
+        // Setup Layout Preset selection
+        activeLayoutPreset = prefs.getActiveLayoutPreset();
+        updatePresetButtonsUi();
+
+        btnSheetPresetDefault.setOnClickListener(v -> selectLayoutPreset(PreferencesManager.PRESET_DEFAULT));
+        btnSheetPreset1.setOnClickListener(v -> selectLayoutPreset(PreferencesManager.PRESET_1));
+        btnSheetPreset2.setOnClickListener(v -> selectLayoutPreset(PreferencesManager.PRESET_2));
+        btnSheetPreset3.setOnClickListener(v -> selectLayoutPreset(PreferencesManager.PRESET_3));
+
+        btnOpenLayoutEditor.setOnClickListener(v -> {
+            dismiss();
+            startActivity(new Intent(requireContext(), GamepadEditActivity.class));
+        });
 
         // Setup Deadzone
         float deadzone = prefs.getDeadzone();
@@ -136,6 +166,34 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
                 listener.onVibrationChanged(isChecked);
             }
         });
+    }
+
+    private void selectLayoutPreset(int presetId) {
+        if (this.activeLayoutPreset != presetId) {
+            this.activeLayoutPreset = presetId;
+            prefs.setActiveLayoutPreset(presetId);
+            updatePresetButtonsUi();
+            if (listener != null) {
+                listener.onLayoutChanged();
+            }
+        }
+    }
+
+    private void updatePresetButtonsUi() {
+        if (btnSheetPresetDefault == null || !isAdded()) return;
+
+        btnSheetPresetDefault.setBackgroundResource(activeLayoutPreset == 0 ? R.drawable.bg_card_dark_selected : R.drawable.bg_card_dark);
+        btnSheetPreset1.setBackgroundResource(activeLayoutPreset == 1 ? R.drawable.bg_card_dark_selected : R.drawable.bg_card_dark);
+        btnSheetPreset2.setBackgroundResource(activeLayoutPreset == 2 ? R.drawable.bg_card_dark_selected : R.drawable.bg_card_dark);
+        btnSheetPreset3.setBackgroundResource(activeLayoutPreset == 3 ? R.drawable.bg_card_dark_selected : R.drawable.bg_card_dark);
+
+        int activeColor = ContextCompat.getColor(requireContext(), R.color.xbox_green);
+        int inactiveColor = Color.parseColor("#889988");
+
+        btnSheetPresetDefault.setTextColor(activeLayoutPreset == 0 ? activeColor : inactiveColor);
+        btnSheetPreset1.setTextColor(activeLayoutPreset == 1 ? activeColor : inactiveColor);
+        btnSheetPreset2.setTextColor(activeLayoutPreset == 2 ? activeColor : inactiveColor);
+        btnSheetPreset3.setTextColor(activeLayoutPreset == 3 ? activeColor : inactiveColor);
     }
 
     private void selectProfile(int profile) {

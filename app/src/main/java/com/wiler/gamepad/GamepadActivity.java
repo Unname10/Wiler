@@ -149,11 +149,7 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
     protected void onResume() {
         super.onResume();
         if (gamepadView != null) {
-            PreferencesManager prefs = PreferencesManager.getInstance(this);
-            gamepadView.setDeadzone(prefs.getDeadzone());
-            gamepadView.setDynamicJoystick(prefs.isDynamicJoystick());
-            gamepadView.setButtonScale(prefs.getButtonScale());
-            gamepadView.setVibrationEnabled(prefs.isVibrationEnabled());
+            gamepadView.reloadLayoutConfig();
         }
     }
 
@@ -230,6 +226,10 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
 
             quickMenuDialog.findViewById(R.id.btnCloseQuickMenu).setOnClickListener(v -> quickMenuDialog.dismiss());
             quickMenuDialog.findViewById(R.id.btnQuickResume).setOnClickListener(v -> quickMenuDialog.dismiss());
+            quickMenuDialog.findViewById(R.id.btnQuickEditLayout).setOnClickListener(v -> {
+                quickMenuDialog.dismiss();
+                startActivity(new Intent(GamepadActivity.this, GamepadEditActivity.class));
+            });
 
             quickMenuDialog.findViewById(R.id.btnQuickSettings).setOnClickListener(v -> {
                 quickMenuDialog.dismiss();
@@ -260,6 +260,11 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
                         if (hidService != null) {
                             hidService.getHidManager().switchProfile(profile);
                         }
+                    }
+
+                    @Override
+                    public void onLayoutChanged() {
+                        gamepadView.reloadLayoutConfig();
                     }
                 });
                 bottomSheet.show(getSupportFragmentManager(), "settings_sheet");

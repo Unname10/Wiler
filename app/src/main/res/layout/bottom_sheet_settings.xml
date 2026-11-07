@@ -196,6 +196,125 @@
                 android:textSize="12sp" />
         </LinearLayout>
 
+        <!-- Section: Custom Layout -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:text="Bố cục nút bấm (Layout)"
+                android:textColor="#D0DDD0"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:text="Custom Layout"
+                android:textColor="#667766"
+                android:textSize="12sp" />
+        </RelativeLayout>
+
+        <!-- Card Layout Customization -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bg_card_dark"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="Chọn hồ sơ bố cục đang áp dụng hoặc mở trình chỉnh sửa kéo thả trực quan để thay đổi vị trí và kích thước từng phím / cần điều khiển:"
+                android:textColor="#889988"
+                android:textSize="12sp" />
+
+            <!-- Preset Selector row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:layout_marginBottom="12dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnSheetPresetDefault"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_card_dark_selected"
+                    android:minHeight="0dp"
+                    android:padding="0dp"
+                    android:text="Mặc định"
+                    android:textAllCaps="false"
+                    android:textColor="#22C55E"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btnSheetPreset1"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_card_dark"
+                    android:minHeight="0dp"
+                    android:padding="0dp"
+                    android:text="Preset 1"
+                    android:textAllCaps="false"
+                    android:textColor="#889988"
+                    android:textSize="11sp" />
+
+                <Button
+                    android:id="@+id/btnSheetPreset2"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_card_dark"
+                    android:minHeight="0dp"
+                    android:padding="0dp"
+                    android:text="Preset 2"
+                    android:textAllCaps="false"
+                    android:textColor="#889988"
+                    android:textSize="11sp" />
+
+                <Button
+                    android:id="@+id/btnSheetPreset3"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_card_dark"
+                    android:minHeight="0dp"
+                    android:padding="0dp"
+                    android:text="Preset 3"
+                    android:textAllCaps="false"
+                    android:textColor="#889988"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <!-- Launch Visual Editor button -->
+            <Button
+                android:id="@+id/btnOpenLayoutEditor"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_button_green"
+                android:minHeight="0dp"
+                android:text="🎨 Chỉnh sửa bố cục trực quan"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <!-- Section: Touch & Joystick -->
         <RelativeLayout
             android:layout_width="match_parent"

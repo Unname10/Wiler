@@ -24,6 +24,14 @@ public class PreferencesManager {
     private static final String KEY_LAST_DEVICE_ADDR = "key_last_device_addr";
     private static final String KEY_LAST_DEVICE_NAME = "key_last_device_name";
 
+    private static final String KEY_LAYOUT_PRESET_ACTIVE = "key_layout_preset_active";
+    private static final String KEY_LAYOUT_JSON_PREFIX = "key_layout_json_preset_";
+
+    public static final int PRESET_DEFAULT = 0;
+    public static final int PRESET_1 = 1;
+    public static final int PRESET_2 = 2;
+    public static final int PRESET_3 = 3;
+
     public static final int PROFILE_XBOX_LIKE = 0;
     public static final int PROFILE_STANDARD_HID = 1;
 
@@ -120,5 +128,30 @@ public class PreferencesManager {
                 .putString(KEY_LAST_DEVICE_ADDR, address)
                 .putString(KEY_LAST_DEVICE_NAME, name)
                 .apply();
+    }
+
+    public int getActiveLayoutPreset() {
+        return prefs.getInt(KEY_LAYOUT_PRESET_ACTIVE, PRESET_DEFAULT);
+    }
+
+    public void setActiveLayoutPreset(int presetId) {
+        prefs.edit().putInt(KEY_LAYOUT_PRESET_ACTIVE, Math.max(0, Math.min(presetId, 3))).apply();
+    }
+
+    public GamepadLayoutConfig getLayoutConfig(int presetId) {
+        if (presetId == PRESET_DEFAULT) {
+            return GamepadLayoutConfig.createDefaultConfig();
+        }
+        String json = prefs.getString(KEY_LAYOUT_JSON_PREFIX + presetId, null);
+        return GamepadLayoutConfig.fromJsonString(json);
+    }
+
+    public void saveLayoutConfig(int presetId, GamepadLayoutConfig config) {
+        if (presetId == PRESET_DEFAULT || config == null) return;
+        prefs.edit().putString(KEY_LAYOUT_JSON_PREFIX + presetId, config.toJsonString()).apply();
+    }
+
+    public GamepadLayoutConfig getActiveLayoutConfig() {
+        return getLayoutConfig(getActiveLayoutPreset());
     }
 }

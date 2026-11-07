@@ -20,6 +20,7 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
 import com.wiler.gamepad.R;
+import com.wiler.gamepad.model.GamepadLayoutConfig;
 import com.wiler.gamepad.model.GamepadState;
 import com.wiler.gamepad.model.InputMapper;
 import com.wiler.gamepad.model.PreferencesManager;
@@ -48,6 +49,7 @@ public class GamepadView extends View {
     private boolean vibrationEnabled = true;
     private float buttonScale = 1.15f;
     private Drawable icSettings;
+    private GamepadLayoutConfig layoutConfig;
 
     // Control Type IDs
     private static final int CONTROL_NONE = 0;
@@ -87,6 +89,8 @@ public class GamepadView extends View {
     // Stick positions
     private float stickRadius = 140f;
     private float thumbRadius = 60f;
+    private float rightStickRadius = 140f;
+    private float rightThumbRadius = 60f;
 
     // Default Stick coordinates (anchor centers)
     private float defaultLeftStickBaseX, defaultLeftStickBaseY;
@@ -186,6 +190,20 @@ public class GamepadView extends View {
         this.vibrationEnabled = prefs.isVibrationEnabled();
 
         this.icSettings = ContextCompat.getDrawable(getContext(), R.drawable.ic_settings);
+        reloadLayoutConfig();
+    }
+
+    public void reloadLayoutConfig() {
+        PreferencesManager prefs = PreferencesManager.getInstance(getContext());
+        this.layoutConfig = prefs.getActiveLayoutConfig();
+        this.deadzone = prefs.getDeadzone();
+        this.dynamicJoystick = prefs.isDynamicJoystick();
+        this.buttonScale = prefs.getButtonScale();
+        this.vibrationEnabled = prefs.isVibrationEnabled();
+        if (getWidth() > 0 && getHeight() > 0) {
+            calculateLayout(getWidth(), getHeight());
+            invalidate();
+        }
     }
 
     public void setGamepadState(GamepadState state) {
@@ -224,72 +242,107 @@ public class GamepadView extends View {
     }
 
     private void calculateLayout(int w, int h) {
+        if (layoutConfig == null) {
+            layoutConfig = PreferencesManager.getInstance(getContext()).getActiveLayoutConfig();
+        }
+
         float baseRadius = Math.min(w, h) * 0.075f;
         float btnRadius = baseRadius * buttonScale;
-        float btnDiameter = btnRadius * 2f;
-        stickRadius = Math.min(w, h) * 0.17f * (0.85f + 0.15f * buttonScale);
-        thumbRadius = stickRadius * 0.45f;
 
         // --- Left side ---
         // LT / LB
-        float topMargin = h * 0.08f;
-        setCircleRect(rectLT, w * 0.08f, topMargin + btnRadius, btnRadius);
-        setCircleRect(rectLB, w * 0.22f, topMargin + btnRadius, btnRadius);
+        GamepadLayoutConfig.Element elLT = layoutConfig.btnLT;
+        setCircleRect(rectLT, elLT.normX * w, elLT.normY * h, btnRadius * elLT.scale);
+
+        GamepadLayoutConfig.Element elLB = layoutConfig.btnLB;
+        setCircleRect(rectLB, elLB.normX * w, elLB.normY * h, btnRadius * elLB.scale);
 
         // D-Pad cluster
-        float dpadCenterX = w * 0.14f;
-        float dpadCenterY = h * 0.50f;
-        float dpadSpacing = btnDiameter * 0.95f;
-        setCircleRect(rectDpadUp, dpadCenterX, dpadCenterY - dpadSpacing, btnRadius);
-        setCircleRect(rectDpadRight, dpadCenterX + dpadSpacing, dpadCenterY, btnRadius);
-        setCircleRect(rectDpadDown, dpadCenterX, dpadCenterY + dpadSpacing, btnRadius);
-        setCircleRect(rectDpadLeft, dpadCenterX - dpadSpacing, dpadCenterY, btnRadius);
+        GamepadLayoutConfig.Element elDpadUp = layoutConfig.dpadUp;
+        setCircleRect(rectDpadUp, elDpadUp.normX * w, elDpadUp.normY * h, btnRadius * elDpadUp.scale);
 
-        // Left Stick default & current
-        defaultLeftStickBaseX = w * 0.32f;
-        defaultLeftStickBaseY = h * 0.72f;
-        leftStickBaseX = defaultLeftStickBaseX;
-        leftStickBaseY = defaultLeftStickBaseY;
-        leftStickThumbX = leftStickBaseX;
-        leftStickThumbY = leftStickBaseY;
+        GamepadLayoutConfig.Element elDpadRight = layoutConfig.dpadRight;
+        setCircleRect(rectDpadRight, elDpadRight.normX * w, elDpadRight.normY * h, btnRadius * elDpadRight.scale);
+
+        GamepadLayoutConfig.Element elDpadDown = layoutConfig.dpadDown;
+        setCircleRect(rectDpadDown, elDpadDown.normX * w, elDpadDown.normY * h, btnRadius * elDpadDown.scale);
+
+        GamepadLayoutConfig.Element elDpadLeft = layoutConfig.dpadLeft;
+        setCircleRect(rectDpadLeft, elDpadLeft.normX * w, elDpadLeft.normY * h, btnRadius * elDpadLeft.scale);
+
+        // Left Stick
+        GamepadLayoutConfig.Element elStickLeft = layoutConfig.leftStick;
+        stickRadius = Math.min(w, h) * 0.17f * (0.85f + 0.15f * buttonScale) * elStickLeft.scale;
+        thumbRadius = stickRadius * 0.45f;
+        defaultLeftStickBaseX = elStickLeft.normX * w;
+        defaultLeftStickBaseY = elStickLeft.normY * h;
+        if (!leftStickActive) {
+            leftStickBaseX = defaultLeftStickBaseX;
+            leftStickBaseY = defaultLeftStickBaseY;
+            leftStickThumbX = leftStickBaseX;
+            leftStickThumbY = leftStickBaseY;
+        }
 
         // L3 (corner)
-        setCircleRect(rectL3, w * 0.07f, h * 0.88f, btnRadius * 0.85f);
+        GamepadLayoutConfig.Element elL3 = layoutConfig.btnL3;
+        setCircleRect(rectL3, elL3.normX * w, elL3.normY * h, btnRadius * 0.85f * elL3.scale);
 
         // --- Center Cluster ---
-        float centerTopY = h * 0.10f;
         float arrowPillHalfW = Math.max(52f, btnRadius * 0.95f);
         float arrowPillHalfH = Math.max(34f, btnRadius * 0.55f);
-        float guideRadius = btnRadius * 0.95f;
 
-        rectBack.set(w * 0.39f - arrowPillHalfW, centerTopY - arrowPillHalfH, w * 0.39f + arrowPillHalfW, centerTopY + arrowPillHalfH);
-        setCircleRect(rectGuide, w * 0.50f, centerTopY, guideRadius);
-        rectStart.set(w * 0.61f - arrowPillHalfW, centerTopY - arrowPillHalfH, w * 0.61f + arrowPillHalfW, centerTopY + arrowPillHalfH);
+        GamepadLayoutConfig.Element elBack = layoutConfig.btnBack;
+        rectBack.set(elBack.normX * w - arrowPillHalfW * elBack.scale,
+                elBack.normY * h - arrowPillHalfH * elBack.scale,
+                elBack.normX * w + arrowPillHalfW * elBack.scale,
+                elBack.normY * h + arrowPillHalfH * elBack.scale);
+
+        GamepadLayoutConfig.Element elGuide = layoutConfig.btnGuide;
+        setCircleRect(rectGuide, elGuide.normX * w, elGuide.normY * h, btnRadius * 0.95f * elGuide.scale);
+
+        GamepadLayoutConfig.Element elStart = layoutConfig.btnStart;
+        rectStart.set(elStart.normX * w - arrowPillHalfW * elStart.scale,
+                elStart.normY * h - arrowPillHalfH * elStart.scale,
+                elStart.normX * w + arrowPillHalfW * elStart.scale,
+                elStart.normY * h + arrowPillHalfH * elStart.scale);
 
         // --- Right side ---
         // RB / RT
-        setCircleRect(rectRB, w * 0.78f, topMargin + btnRadius, btnRadius);
-        setCircleRect(rectRT, w * 0.92f, topMargin + btnRadius, btnRadius);
+        GamepadLayoutConfig.Element elRB = layoutConfig.btnRB;
+        setCircleRect(rectRB, elRB.normX * w, elRB.normY * h, btnRadius * elRB.scale);
+
+        GamepadLayoutConfig.Element elRT = layoutConfig.btnRT;
+        setCircleRect(rectRT, elRT.normX * w, elRT.normY * h, btnRadius * elRT.scale);
 
         // ABXY Diamond
-        float abxyCenterX = w * 0.86f;
-        float abxyCenterY = h * 0.50f;
-        float abxySpacing = btnDiameter * 0.95f;
-        setCircleRect(rectBtnY, abxyCenterX, abxyCenterY - abxySpacing, btnRadius);
-        setCircleRect(rectBtnB, abxyCenterX + abxySpacing, abxyCenterY, btnRadius);
-        setCircleRect(rectBtnA, abxyCenterX, abxyCenterY + abxySpacing, btnRadius);
-        setCircleRect(rectBtnX, abxyCenterX - abxySpacing, abxyCenterY, btnRadius);
+        GamepadLayoutConfig.Element elBtnY = layoutConfig.btnY;
+        setCircleRect(rectBtnY, elBtnY.normX * w, elBtnY.normY * h, btnRadius * elBtnY.scale);
 
-        // Right Stick default & current
-        defaultRightStickBaseX = w * 0.68f;
-        defaultRightStickBaseY = h * 0.72f;
-        rightStickBaseX = defaultRightStickBaseX;
-        rightStickBaseY = defaultRightStickBaseY;
-        rightStickThumbX = rightStickBaseX;
-        rightStickThumbY = rightStickBaseY;
+        GamepadLayoutConfig.Element elBtnB = layoutConfig.btnB;
+        setCircleRect(rectBtnB, elBtnB.normX * w, elBtnB.normY * h, btnRadius * elBtnB.scale);
+
+        GamepadLayoutConfig.Element elBtnA = layoutConfig.btnA;
+        setCircleRect(rectBtnA, elBtnA.normX * w, elBtnA.normY * h, btnRadius * elBtnA.scale);
+
+        GamepadLayoutConfig.Element elBtnX = layoutConfig.btnX;
+        setCircleRect(rectBtnX, elBtnX.normX * w, elBtnX.normY * h, btnRadius * elBtnX.scale);
+
+        // Right Stick
+        GamepadLayoutConfig.Element elStickRight = layoutConfig.rightStick;
+        rightStickRadius = Math.min(w, h) * 0.17f * (0.85f + 0.15f * buttonScale) * elStickRight.scale;
+        rightThumbRadius = rightStickRadius * 0.45f;
+        defaultRightStickBaseX = elStickRight.normX * w;
+        defaultRightStickBaseY = elStickRight.normY * h;
+        if (!rightStickActive) {
+            rightStickBaseX = defaultRightStickBaseX;
+            rightStickBaseY = defaultRightStickBaseY;
+            rightStickThumbX = rightStickBaseX;
+            rightStickThumbY = rightStickBaseY;
+        }
 
         // R3 (corner)
-        setCircleRect(rectR3, w * 0.93f, h * 0.88f, btnRadius * 0.85f);
+        GamepadLayoutConfig.Element elR3 = layoutConfig.btnR3;
+        setCircleRect(rectR3, elR3.normX * w, elR3.normY * h, btnRadius * 0.85f * elR3.scale);
     }
 
     private void setCircleRect(RectF rect, float cx, float cy, float radius) {
@@ -333,8 +386,8 @@ public class GamepadView extends View {
         drawButton(canvas, rectBtnA, "A", isPressed(CONTROL_BTN_A), Color.parseColor("#22C55E"), Color.parseColor("#22C55E"));
 
         // Sticks
-        drawStick(canvas, leftStickBaseX, leftStickBaseY, leftStickThumbX, leftStickThumbY);
-        drawStick(canvas, rightStickBaseX, rightStickBaseY, rightStickThumbX, rightStickThumbY);
+        drawStick(canvas, leftStickBaseX, leftStickBaseY, leftStickThumbX, leftStickThumbY, stickRadius, thumbRadius);
+        drawStick(canvas, rightStickBaseX, rightStickBaseY, rightStickThumbX, rightStickThumbY, rightStickRadius, rightThumbRadius);
     }
 
     private boolean isPressed(int controlId) {
@@ -402,21 +455,21 @@ public class GamepadView extends View {
         }
     }
 
-    private void drawStick(Canvas canvas, float baseX, float baseY, float thumbX, float thumbY) {
+    private void drawStick(Canvas canvas, float baseX, float baseY, float thumbX, float thumbY, float radius, float tRadius) {
         // Outer base
-        canvas.drawCircle(baseX, baseY, stickRadius, stickBasePaint);
+        canvas.drawCircle(baseX, baseY, radius, stickBasePaint);
 
         // Outer boundary stroke
         btnStrokePaint.setColor(Color.parseColor("#263826"));
-        canvas.drawCircle(baseX, baseY, stickRadius, btnStrokePaint);
+        canvas.drawCircle(baseX, baseY, radius, btnStrokePaint);
 
         // Deadzone dashed guide
-        float dzRadius = Math.max(12f, stickRadius * deadzone);
+        float dzRadius = Math.max(12f, radius * deadzone);
         canvas.drawCircle(baseX, baseY, dzRadius, dashedRingPaint);
 
         // Thumb inner circle
-        canvas.drawCircle(thumbX, thumbY, thumbRadius, stickThumbPaint);
-        canvas.drawCircle(thumbX, thumbY, thumbRadius * 0.55f, stickThumbInnerPaint);
+        canvas.drawCircle(thumbX, thumbY, tRadius, stickThumbPaint);
+        canvas.drawCircle(thumbX, thumbY, tRadius * 0.55f, stickThumbInnerPaint);
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -477,13 +530,14 @@ public class GamepadView extends View {
             // 1. Exclude top bar (y < h * 0.30f) where shoulder and center menu buttons reside.
             // 2. Restrict to active radius around default stick centers.
             float topBarExclusion = getHeight() * 0.30f;
-            float maxActiveRadius = stickRadius * 1.65f;
+            float maxActiveRadiusLeft = stickRadius * 1.65f;
+            float maxActiveRadiusRight = rightStickRadius * 1.65f;
 
             if (y >= topBarExclusion) {
                 float distToLeft = (float) Math.hypot(x - defaultLeftStickBaseX, y - defaultLeftStickBaseY);
                 float distToRight = (float) Math.hypot(x - defaultRightStickBaseX, y - defaultRightStickBaseY);
 
-                if (x < getWidth() * 0.5f && distToLeft <= maxActiveRadius) {
+                if (x < getWidth() * 0.5f && distToLeft <= maxActiveRadiusLeft) {
                     control = CONTROL_STICK_LEFT;
                     leftStickActive = true;
                     if (dynamicJoystick) {
@@ -491,7 +545,7 @@ public class GamepadView extends View {
                         leftStickBaseY = y;
                     }
                     updateStick(true, x, y);
-                } else if (x >= getWidth() * 0.5f && distToRight <= maxActiveRadius) {
+                } else if (x >= getWidth() * 0.5f && distToRight <= maxActiveRadiusRight) {
                     control = CONTROL_STICK_RIGHT;
                     rightStickActive = true;
                     if (dynamicJoystick) {
@@ -667,14 +721,15 @@ public class GamepadView extends View {
     private void updateStick(boolean isLeft, float touchX, float touchY) {
         float baseX = isLeft ? leftStickBaseX : rightStickBaseX;
         float baseY = isLeft ? leftStickBaseY : rightStickBaseY;
+        float radius = isLeft ? stickRadius : rightStickRadius;
 
         float dx = touchX - baseX;
         float dy = touchY - baseY;
         float distance = (float) Math.sqrt(dx * dx + dy * dy);
 
         // Clamp visual thumb position to stick circle
-        if (distance > stickRadius) {
-            float scale = stickRadius / distance;
+        if (distance > radius) {
+            float scale = radius / distance;
             dx *= scale;
             dy *= scale;
         }
@@ -688,8 +743,8 @@ public class GamepadView extends View {
         }
 
         // Normalize to -1.0 .. 1.0
-        float normX = dx / stickRadius;
-        float normY = dy / stickRadius;
+        float normX = dx / radius;
+        float normY = dy / radius;
 
         // Apply clamped radial deadzone algorithm
         float[] mapped = InputMapper.applyRadialDeadzone(normX, normY, deadzone);
