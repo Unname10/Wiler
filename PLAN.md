@@ -122,7 +122,7 @@ Tài liệu này là bản kế hoạch tổng thể duy nhất, hợp nhất to
 
 ## 5. Lộ trình Triển khai (Milestones)
 
-### 🚀 Milestone 1: Prototype Tối thiểu (Xác thực Phần cứng, Nút bấm & Analog)
+### 🚀 Milestone 1: Prototype Tối thiểu (Xác thực Phần cứng, Nút bấm & Analog) - [ĐÃ HOÀN THÀNH]
 1. Cấu hình `build.gradle` (minSdk 28, compileSdk 34, namespace `com.wiler.gamepad`).
 2. Khai báo đầy đủ manifest permissions và `BluetoothHidService` (`connectedDevice`).
 3. Tạo lớp `StandardHidDescriptor`, `BluetoothHidManager`, `InputMapper`.
@@ -136,16 +136,14 @@ Tài liệu này là bản kế hoạch tổng thể duy nhất, hợp nhất to
    - **Nút test phím A (nhấn/nhả tức thì qua Dispatcher).**
    - **Một cần gạt Joystick ảo đơn giản để rê thử trục Analog X/Y qua InputMapper & Dispatcher.**
    - Nút *"Ngắt kết nối"*.
-7. **Kiểm thử trên máy thật:** Nạp APK lên điện thoại thật, ghép đôi với PC, mở [gamepad-tester.com](https://gamepad-tester.com) xác nhận:
-   - PC nhận Gamepad.
-   - Bấm nút A: nút A sáng đèn.
-   - Rê Joystick ảo: trục X, Y di chuyển mượt mà đúng hướng.
+7. **Kiểm thử trên máy thật:** PC & Android nhận Gamepad, di chuyển cần và bấm nút mượt mà.
 
-### 🎮 Milestone 2: Tích hợp Giao diện Hoàn chỉnh theo Thiết kế
-1. Xây dựng `HomeActivity` (`Home.png`).
-2. Xây dựng `GamepadActivity` và `GamepadView` (`Gamepad.png`).
-3. Dựng `ConnectionBottomSheet` (`Connection.png`).
-4. Dựng `SettingsBottomSheet` (`Settings.png`) kèm chuỗi state machine đổi Profile bất đồng bộ.
-5. Dựng `InGameMenuDialog` và Overlay xử lý mất kết nối trong game.
-6. Hoàn thiện thông báo Foreground Service kèm nút Ngắt kết nối.
-7. Đóng gói hoàn chỉnh, kiểm thử toàn diện theo Test Matrix.
+### 🎮 Milestone 2: Tích hợp Giao diện Hoàn chỉnh theo Thiết kế - [ĐÃ HOÀN THÀNH 100%]
+1. [x] Xây dựng `HomeActivity` (`Home.png`) với trạng thái Bluetooth/HID badge, danh sách thiết bị bonded, phát tín hiệu ghép đôi đếm ngược 120s, nút "Vào Gamepad", nút mở Settings.
+2. [x] Xây dựng `GamepadActivity` và `GamepadView` (`Gamepad.png`): Canvas đa điểm, deadzone radial, dynamic joystick có giới hạn vùng hiệu quả, Guide short/long-press, tùy chỉnh buttonScale và haptic feedback.
+3. [x] Dựng `ConnectionBottomSheet` (`Connection.png`): Quản lý ghép nối, danh sách thiết bị paired, đếm ngược phát tín hiệu, công tắc auto-reconnect, ngắt kết nối tức thì.
+4. [x] Dựng `SettingsBottomSheet` (`Settings.png`) kèm chuỗi state machine đổi Profile bất đồng bộ (Clean Proxy Re-init), thanh kéo deadzone kèm preview thời gian thực, slider button scale, switch dynamic joystick, switch haptic feedback.
+5. [x] Dựng `InGameMenuDialog` và Overlay xử lý mất kết nối trong game (tự động thử lại 3 lần).
+6. [x] Hoàn thiện thông báo Foreground Service kèm nút Ngắt kết nối dứt điểm.
+7. [x] Tối ưu vòng đời dịch vụ: `Auto stopSelf()` khi unbind và không còn kết nối nào active để tiết kiệm pin.
+8. [x] Đóng gói APK hoàn chỉnh, vượt qua toàn bộ Test Matrix.

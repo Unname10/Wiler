@@ -162,6 +162,10 @@ public class HomeActivity extends AppCompatActivity implements BluetoothHidServi
                 }
 
                 @Override
+                public void onVibrationChanged(boolean enabled) {
+                }
+
+                @Override
                 public void onProfileChanged(int profile) {
                     if (hidService != null) {
                         hidService.getHidManager().switchProfile(profile);

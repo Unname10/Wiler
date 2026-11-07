@@ -18,6 +18,7 @@ public class PreferencesManager {
     private static final String KEY_DEADZONE = "key_deadzone";
     private static final String KEY_DYNAMIC_JOYSTICK = "key_dynamic_joystick";
     private static final String KEY_BUTTON_SCALE = "key_button_scale";
+    private static final String KEY_VIBRATION = "key_vibration";
     private static final String KEY_AUTO_RECONNECT = "key_auto_reconnect";
     private static final String KEY_PROFILE = "key_profile";
     private static final String KEY_LAST_DEVICE_ADDR = "key_last_device_addr";
@@ -71,6 +72,17 @@ public class PreferencesManager {
 
     public void setButtonScale(float scale) {
         prefs.edit().putFloat(KEY_BUTTON_SCALE, Math.max(0.70f, Math.min(scale, 1.50f))).apply();
+    }
+
+    /**
+     * Whether haptic feedback (vibration on button touch) is enabled (default: true)
+     */
+    public boolean isVibrationEnabled() {
+        return prefs.getBoolean(KEY_VIBRATION, true);
+    }
+
+    public void setVibrationEnabled(boolean enabled) {
+        prefs.edit().putBoolean(KEY_VIBRATION, enabled).apply();
     }
 
     /**

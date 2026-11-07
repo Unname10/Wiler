@@ -153,6 +153,7 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
             gamepadView.setDeadzone(prefs.getDeadzone());
             gamepadView.setDynamicJoystick(prefs.isDynamicJoystick());
             gamepadView.setButtonScale(prefs.getButtonScale());
+            gamepadView.setVibrationEnabled(prefs.isVibrationEnabled());
         }
     }
 
@@ -247,6 +248,11 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
                     @Override
                     public void onButtonScaleChanged(float scale) {
                         gamepadView.setButtonScale(scale);
+                    }
+
+                    @Override
+                    public void onVibrationChanged(boolean enabled) {
+                        gamepadView.setVibrationEnabled(enabled);
                     }
 
                     @Override

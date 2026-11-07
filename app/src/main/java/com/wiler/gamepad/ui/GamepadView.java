@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.util.AttributeSet;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -44,6 +45,7 @@ public class GamepadView extends View {
 
     private float deadzone = 0.10f;
     private boolean dynamicJoystick = true;
+    private boolean vibrationEnabled = true;
     private float buttonScale = 1.15f;
     private Drawable icSettings;
 
@@ -181,6 +183,7 @@ public class GamepadView extends View {
         this.deadzone = prefs.getDeadzone();
         this.dynamicJoystick = prefs.isDynamicJoystick();
         this.buttonScale = prefs.getButtonScale();
+        this.vibrationEnabled = prefs.isVibrationEnabled();
 
         this.icSettings = ContextCompat.getDrawable(getContext(), R.drawable.ic_settings);
     }
@@ -200,6 +203,10 @@ public class GamepadView extends View {
 
     public void setDynamicJoystick(boolean dynamicJoystick) {
         this.dynamicJoystick = dynamicJoystick;
+    }
+
+    public void setVibrationEnabled(boolean vibrationEnabled) {
+        this.vibrationEnabled = vibrationEnabled;
     }
 
     public void setButtonScale(float buttonScale) {
@@ -549,6 +556,11 @@ public class GamepadView extends View {
 
     private void activateControl(int control) {
         if (gamepadState == null) return;
+
+        if (vibrationEnabled) {
+            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY,
+                    HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING | HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+        }
 
         switch (control) {
             case CONTROL_BTN_A: gamepadState.setButton(GamepadState.BTN_A, true); break;

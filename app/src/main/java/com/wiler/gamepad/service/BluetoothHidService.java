@@ -102,6 +102,17 @@ public class BluetoothHidService extends Service implements BluetoothHidManager.
         return binder;
     }
 
+    @Override
+    public boolean onUnbind(Intent intent) {
+        Log.d(TAG, "BluetoothHidService onUnbind");
+        // Auto-cleanup when no clients are bound and no active device is connected
+        if (hidManager != null && hidManager.getConnectedDevice() == null) {
+            Log.d(TAG, "No active connection and no clients bound; stopping service");
+            stopSelf();
+        }
+        return super.onUnbind(intent);
+    }
+
     public void registerCallback(ServiceCallback callback) {
         if (callback != null && !callbacks.contains(callback)) {
             callbacks.add(callback);

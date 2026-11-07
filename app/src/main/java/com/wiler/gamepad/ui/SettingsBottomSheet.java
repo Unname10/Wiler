@@ -27,6 +27,7 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
         void onDeadzoneChanged(float deadzone);
         void onDynamicJoystickChanged(boolean enabled);
         void onButtonScaleChanged(float scale);
+        void onVibrationChanged(boolean enabled);
         void onProfileChanged(int profile);
     }
 
@@ -40,6 +41,7 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
     private TextView tvButtonScaleBadge;
     private Slider sliderButtonScale;
     private SwitchMaterial switchDynamicJoystick;
+    private SwitchMaterial switchVibration;
     private ImageView btnCloseSettings;
 
     private PreferencesManager prefs;
@@ -71,6 +73,7 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
         tvButtonScaleBadge = view.findViewById(R.id.tvButtonScaleBadge);
         sliderButtonScale = view.findViewById(R.id.sliderButtonScale);
         switchDynamicJoystick = view.findViewById(R.id.switchDynamicJoystick);
+        switchVibration = view.findViewById(R.id.switchVibration);
         btnCloseSettings = view.findViewById(R.id.btnCloseSettings);
 
         btnCloseSettings.setOnClickListener(v -> dismiss());
@@ -122,6 +125,15 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
             prefs.setDynamicJoystick(isChecked);
             if (listener != null) {
                 listener.onDynamicJoystickChanged(isChecked);
+            }
+        });
+
+        // Setup Vibration
+        switchVibration.setChecked(prefs.isVibrationEnabled());
+        switchVibration.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            prefs.setVibrationEnabled(isChecked);
+            if (listener != null) {
+                listener.onVibrationChanged(isChecked);
             }
         });
     }
