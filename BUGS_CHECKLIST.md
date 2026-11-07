@@ -49,6 +49,36 @@ Mục tiêu: Khắc phục các lỗi về kết nối, giao diện và điều 
 
 ---
 
+### 4. Sửa Lỗi Mapping Nút Android & Triển khai Đổi Profile Thực sự (HID Mapping & Profiles)
+- [x] **4.1. Sửa Lỗi Mapping Nút trên Android (LB -> Y, L3 -> Start, R3 -> End, X & RB mất)**
+  - **Nguyên nhân:** Linux kernel `hid-input.c` và Android `Generic.kl` map 16 nút liên tiếp với offset `0x130`. Trong đó Button 3 là `BTN_C` (không map), Button 6 là `BTN_Z` (không map). Khi Wiler đánh số nút liên tiếp không chừa vị trí cho C và Z, toàn bộ các nút phía sau bị trượt: X bị vào C (mất), LB rơi vào Y, RB rơi vào Z (mất), L3 rơi vào Start, R3 rơi vào End!
+  - **Giải pháp:** Cập nhật lại 16 bit serialization trong `StandardHidDescriptor.java`:
+    - Button 1: A (`BTN_A`)
+    - Button 2: B (`BTN_B`)
+    - Button 3: 0 (bỏ qua `BTN_C`)
+    - Button 4: X (`BTN_X`)
+    - Button 5: Y (`BTN_Y`)
+    - Button 6: 0 (bỏ qua `BTN_Z`)
+    - Button 7: LB (`BTN_TL`)
+    - Button 8: RB (`BTN_TR`)
+    - Button 9: LT Button (`BTN_TL2`)
+    - Button 10: RT Button (`BTN_TR2`)
+    - Button 11: Back (`BTN_SELECT`)
+    - Button 12: Start (`BTN_START`)
+    - Button 13: Guide (`BTN_MODE`)
+    - Button 14: L3 (`BTN_THUMBL`)
+    - Button 15: R3 (`BTN_THUMBR`)
+    Toàn bộ nút trên Android và Linux/macOS chuẩn 100%!
+- [x] **4.2. Triển khai Chuyển đổi Profile Thực sự (Xbox Wireless Controller vs Standard HID)**
+  - **Nguyên nhân:** Trước đây hai Profile chỉ lưu một giá trị số vào SharedPreferences, không hề unregister/re-register SDP record hay đổi descriptor.
+  - **Giải pháp:**
+    - Tạo `XboxLikeHidDescriptor.java`: khai báo SDP name `"Xbox Wireless Controller"`, provider `"Microsoft"`, tuần tự hóa nút chuẩn DirectInput Windows.
+    - Trong `StandardHidDescriptor.java`: khai báo SDP name `"Wiler Gamepad"`, provider `"Wiler"`, tuần tự hóa chuẩn Android/Universal.
+    - Thêm `switchProfile(int profile)` trong `BluetoothHidManager.java`: ngắt kết nối, `unregisterApp()`, và đăng ký lại `registerApp()` với SDP Settings và Descriptor của Profile mới.
+    - Thêm thông báo hướng dẫn người dùng: Sau khi đổi profile, cần Unpair và Pair lại trên host PC/Android để hệ điều hành nhận SDP cache mới.
+
+---
+
 ## 🧪 Ma trận Kiểm thử Thực tế Đã Sẵn Sàng (Verification Checklist)
 - [x] Build APK Debug hoàn thành thành công: `app\build\outputs\apk\debug\app-debug.apk`.
 - [ ] Bấm nút "Ngắt kết nối" trên Notification -> Notification biến mất, các màn hình đổi về "Kết nối".

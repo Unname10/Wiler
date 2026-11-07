@@ -118,10 +118,42 @@ public final class StandardHidDescriptor {
             data[6] = 0;
         }
 
-        // 8 & 9. 16 Buttons (Low byte, High byte)
-        int buttons = state.getButtons();
-        data[7] = (byte) (buttons & 0xFF);
-        data[8] = (byte) ((buttons >> 8) & 0xFF);
+        // 8 & 9. 16 Buttons mapped to standard Linux evdev / Android Gamepad specification:
+        // Button 1 (bit 0): BTN_A (0x130)
+        // Button 2 (bit 1): BTN_B (0x131)
+        // Button 3 (bit 2): Unused / BTN_C (0x132)
+        // Button 4 (bit 3): BTN_X (0x133)
+        // Button 5 (bit 4): BTN_Y (0x134)
+        // Button 6 (bit 5): Unused / BTN_Z (0x135)
+        // Button 7 (bit 6): BTN_TL / L1 / LB (0x136)
+        // Button 8 (bit 7): BTN_TR / R1 / RB (0x137)
+        // Button 9 (bit 8): BTN_TL2 / L2 / LT Button (0x138)
+        // Button 10 (bit 9): BTN_TR2 / R2 / RT Button (0x139)
+        // Button 11 (bit 10): BTN_SELECT / Back (0x13a)
+        // Button 12 (bit 11): BTN_START / Start (0x13b)
+        // Button 13 (bit 12): BTN_MODE / Guide (0x13c)
+        // Button 14 (bit 13): BTN_THUMBL / L3 (0x13d)
+        // Button 15 (bit 14): BTN_THUMBR / R3 (0x13e)
+        // Button 16 (bit 15): Unused
+        int outButtons = 0;
+        if (state.isButtonPressed(GamepadState.BTN_A)) outButtons |= (1 << 0);
+        if (state.isButtonPressed(GamepadState.BTN_B)) outButtons |= (1 << 1);
+        // bit 2 is intentionally left 0 for BTN_C compatibility
+        if (state.isButtonPressed(GamepadState.BTN_X)) outButtons |= (1 << 3);
+        if (state.isButtonPressed(GamepadState.BTN_Y)) outButtons |= (1 << 4);
+        // bit 5 is intentionally left 0 for BTN_Z compatibility
+        if (state.isButtonPressed(GamepadState.BTN_LB)) outButtons |= (1 << 6);
+        if (state.isButtonPressed(GamepadState.BTN_RB)) outButtons |= (1 << 7);
+        if (state.isButtonPressed(GamepadState.BTN_LT_BTN)) outButtons |= (1 << 8);
+        if (state.isButtonPressed(GamepadState.BTN_RT_BTN)) outButtons |= (1 << 9);
+        if (state.isButtonPressed(GamepadState.BTN_VIEW_BACK)) outButtons |= (1 << 10);
+        if (state.isButtonPressed(GamepadState.BTN_MENU_START)) outButtons |= (1 << 11);
+        if (state.isButtonPressed(GamepadState.BTN_GUIDE)) outButtons |= (1 << 12);
+        if (state.isButtonPressed(GamepadState.BTN_LS_CLICK)) outButtons |= (1 << 13);
+        if (state.isButtonPressed(GamepadState.BTN_RS_CLICK)) outButtons |= (1 << 14);
+
+        data[7] = (byte) (outButtons & 0xFF);
+        data[8] = (byte) ((outButtons >> 8) & 0xFF);
 
         return data;
     }

@@ -148,6 +148,26 @@ public class HomeActivity extends AppCompatActivity implements BluetoothHidServi
     private void setupListeners() {
         btnSettings.setOnClickListener(v -> {
             SettingsBottomSheet sheet = new SettingsBottomSheet();
+            sheet.setListener(new SettingsBottomSheet.OnSettingsChangeListener() {
+                @Override
+                public void onDeadzoneChanged(float deadzone) {
+                }
+
+                @Override
+                public void onDynamicJoystickChanged(boolean enabled) {
+                }
+
+                @Override
+                public void onButtonScaleChanged(float scale) {
+                }
+
+                @Override
+                public void onProfileChanged(int profile) {
+                    if (hidService != null) {
+                        hidService.getHidManager().switchProfile(profile);
+                    }
+                }
+            });
             sheet.show(getSupportFragmentManager(), "settings_sheet");
         });
 

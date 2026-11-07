@@ -16,6 +16,7 @@ import android.util.Log;
 import androidx.core.content.ContextCompat;
 
 import com.wiler.gamepad.model.GamepadState;
+import com.wiler.gamepad.model.PreferencesManager;
 
 import java.util.concurrent.Executors;
 
@@ -114,12 +115,21 @@ public class BluetoothHidManager {
             // Use Android's official constant SUBCLASS2_GAMEPAD = 0x02
             byte subclass = BluetoothHidDevice.SUBCLASS2_GAMEPAD;
 
+            PreferencesManager prefs = PreferencesManager.getInstance(context);
+            int profile = prefs.getProfile();
+            String appName = (profile == PreferencesManager.PROFILE_XBOX_LIKE) ? "Xbox Wireless Controller" : "Wiler Gamepad";
+            String appDesc = (profile == PreferencesManager.PROFILE_XBOX_LIKE) ? "Xbox Wireless Gamepad" : "Wiler Bluetooth Gamepad";
+            String provider = (profile == PreferencesManager.PROFILE_XBOX_LIKE) ? "Microsoft" : "Wiler";
+            byte[] descriptor = (profile == PreferencesManager.PROFILE_XBOX_LIKE) ? XboxLikeHidDescriptor.DESCRIPTOR : StandardHidDescriptor.DESCRIPTOR;
+
+            Log.i(TAG, "Registering HID with profile=" + profile + " (" + appName + ")...");
+
             BluetoothHidDeviceAppSdpSettings sdpSettings = new BluetoothHidDeviceAppSdpSettings(
-                    "Wiler Gamepad",
-                    "Wiler Bluetooth Gamepad",
-                    "Wiler",
+                    appName,
+                    appDesc,
+                    provider,
                     subclass,
-                    StandardHidDescriptor.DESCRIPTOR
+                    descriptor
             );
 
             // Passing null for inQos and outQos uses standard Bluetooth default QoS
@@ -140,6 +150,46 @@ public class BluetoothHidManager {
             if (listener != null) {
                 listener.onAppRegistrationChanged(false);
             }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    public synchronized boolean switchProfile(int newProfile) {
+        PreferencesManager prefs = PreferencesManager.getInstance(context);
+        prefs.setProfile(newProfile);
+        Log.i(TAG, "switchProfile requested to: " + newProfile);
+
+        if (hidDevice != null && hasPermissions()) {
+            disconnect();
+            if (isAppRegistered) {
+                try {
+                    hidDevice.unregisterApp();
+                } catch (Exception e) {
+                    Log.w(TAG, "Error unregistering app on switchProfile", e);
+                }
+                isAppRegistered = false;
+            }
+            registerHidApp();
+            return true;
+        }
+        return false;
+    }
+
+    public byte[] buildReport(GamepadState state) {
+        int profile = PreferencesManager.getInstance(context).getProfile();
+        if (profile == PreferencesManager.PROFILE_XBOX_LIKE) {
+            return XboxLikeHidDescriptor.buildReport(state);
+        } else {
+            return StandardHidDescriptor.buildReport(state);
+        }
+    }
+
+    public byte[] buildNeutralReport() {
+        int profile = PreferencesManager.getInstance(context).getProfile();
+        if (profile == PreferencesManager.PROFILE_XBOX_LIKE) {
+            return XboxLikeHidDescriptor.buildNeutralReport();
+        } else {
+            return StandardHidDescriptor.buildNeutralReport();
         }
     }
 
@@ -286,9 +336,9 @@ public class BluetoothHidManager {
                     // the Windows HID driver and causes it to reject the response.
                     byte[] report;
                     if (currentState != null) {
-                        report = StandardHidDescriptor.buildReport(currentState);
+                        report = buildReport(currentState);
                     } else {
-                        report = StandardHidDescriptor.buildNeutralReport();
+                        report = buildNeutralReport();
                     }
                     boolean replied = hidDevice.replyReport(device, type, StandardHidDescriptor.REPORT_ID, report);
                     Log.i(TAG, "replyReport(id=" + StandardHidDescriptor.REPORT_ID + ") result: " + replied);

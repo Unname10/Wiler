@@ -105,7 +105,7 @@ public class InputDispatcher {
 
         // Snapshot current state
         GamepadState snapshot = gamepadState.copy();
-        byte[] data = StandardHidDescriptor.buildReport(snapshot);
+        byte[] data = hidManager.buildReport(snapshot);
 
         // Skip duplicate packets if state has not changed
         if (lastSentData != null && Arrays.equals(data, lastSentData)) {

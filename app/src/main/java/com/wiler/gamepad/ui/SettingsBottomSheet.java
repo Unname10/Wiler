@@ -131,10 +131,11 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
         if (previousProfile != profile) {
             prefs.setProfile(profile);
             updateProfileCards(profile);
-            Toast.makeText(requireContext(), "Đã chọn hồ sơ. Cần khởi động lại kết nối để áp dụng.", Toast.LENGTH_SHORT).show();
             if (listener != null) {
                 listener.onProfileChanged(profile);
             }
+            String name = (profile == PreferencesManager.PROFILE_XBOX_LIKE) ? "Xbox Wireless Controller (Windows PC)" : "Standard HID Gamepad (Android/Universal)";
+            Toast.makeText(requireContext(), "Đã chuyển sang: " + name + ".\nHãy hủy ghép đôi và ghép nối lại trên thiết bị nhận để áp dụng!", Toast.LENGTH_LONG).show();
         }
     }
 

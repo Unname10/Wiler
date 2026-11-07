@@ -251,7 +251,9 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
 
                     @Override
                     public void onProfileChanged(int profile) {
-                        Toast.makeText(GamepadActivity.this, "Profile đã thay đổi", Toast.LENGTH_SHORT).show();
+                        if (hidService != null) {
+                            hidService.getHidManager().switchProfile(profile);
+                        }
                     }
                 });
                 bottomSheet.show(getSupportFragmentManager(), "settings_sheet");
