@@ -349,7 +349,7 @@ public class GamepadView extends View {
 
         // Text
         textPaint.setColor(textColor);
-        textPaint.setTextSize(radius * 0.9f);
+        textPaint.setTextSize(radius * 0.5f);
         float textY = cy - ((textPaint.descent() + textPaint.ascent()) / 2);
         canvas.drawText(text, cx, textY, textPaint);
     }
