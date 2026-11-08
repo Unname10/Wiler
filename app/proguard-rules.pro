@@ -14,6 +14,3 @@
 -keep class com.wiler.gamepad.service.BluetoothHidService** { *; }
 -keep class com.wiler.gamepad.hid.** { *; }
 
-# Keep Android Support and Material components
--keep class androidx.appcompat.** { *; }
--keep class com.google.android.material.** { *; }

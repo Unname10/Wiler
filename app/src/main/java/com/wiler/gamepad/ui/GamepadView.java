@@ -137,6 +137,10 @@ public class GamepadView extends View {
     private final Paint stickThumbInnerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint dashedRingPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+    // Anchors
+    private float leftAnchorX, leftAnchorY;
+    private float rightAnchorX, rightAnchorY;
+
     public GamepadView(Context context) {
         super(context);
         init();
@@ -540,6 +544,8 @@ public class GamepadView extends View {
                 if (x < getWidth() * 0.5f && distToLeft <= maxActiveRadiusLeft) {
                     control = CONTROL_STICK_LEFT;
                     leftStickActive = true;
+                    leftAnchorX = x;
+                    leftAnchorY = y;
                     if (dynamicJoystick) {
                         leftStickBaseX = x;
                         leftStickBaseY = y;
@@ -548,6 +554,8 @@ public class GamepadView extends View {
                 } else if (x >= getWidth() * 0.5f && distToRight <= maxActiveRadiusRight) {
                     control = CONTROL_STICK_RIGHT;
                     rightStickActive = true;
+                    rightAnchorX = x;
+                    rightAnchorY = y;
                     if (dynamicJoystick) {
                         rightStickBaseX = x;
                         rightStickBaseY = y;
@@ -722,9 +730,12 @@ public class GamepadView extends View {
         float baseX = isLeft ? leftStickBaseX : rightStickBaseX;
         float baseY = isLeft ? leftStickBaseY : rightStickBaseY;
         float radius = isLeft ? stickRadius : rightStickRadius;
+        float anchorX = isLeft ? leftAnchorX : rightAnchorX;
+        float anchorY = isLeft ? leftAnchorY : rightAnchorY;
+        
+        float dx = touchX - anchorX;
+        float dy = touchY - anchorY;
 
-        float dx = touchX - baseX;
-        float dy = touchY - baseY;
         float distance = (float) Math.sqrt(dx * dx + dy * dy);
 
         // Clamp visual thumb position to stick circle
