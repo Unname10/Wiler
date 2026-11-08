@@ -71,6 +71,10 @@ public class BluetoothHidService extends Service implements BluetoothHidManager.
 
         createNotificationChannel();
 
+        // Start foreground IMMEDIATELY on create to prevent Flyme/MIUI/OEM ROM
+        // from killing this service when app goes idle (even before connection).
+        showIdleNotification();
+
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         filter.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
@@ -89,7 +93,9 @@ public class BluetoothHidService extends Service implements BluetoothHidManager.
         if (intent != null && ACTION_DISCONNECT.equals(intent.getAction())) {
             Log.d(TAG, "ACTION_DISCONNECT received in onStartCommand");
             disconnect();
-            stopForegroundNotification();
+            // Keep foreground but update to idle state (DO NOT remove notification,
+            // that would allow OEM ROMs to kill the service)
+            showIdleNotification();
             for (ServiceCallback cb : callbacks) {
                 cb.onConnectionStateChanged(null, android.bluetooth.BluetoothProfile.STATE_DISCONNECTED);
             }
@@ -105,11 +111,6 @@ public class BluetoothHidService extends Service implements BluetoothHidManager.
     @Override
     public boolean onUnbind(Intent intent) {
         Log.d(TAG, "BluetoothHidService onUnbind");
-        // Auto-cleanup when no clients are bound and no active device is connected
-        if (hidManager != null && hidManager.getConnectedDevice() == null) {
-            Log.d(TAG, "No active connection and no clients bound; stopping service");
-            stopSelf();
-        }
         return super.onUnbind(intent);
     }
 
@@ -182,6 +183,27 @@ public class BluetoothHidService extends Service implements BluetoothHidManager.
         startForeground(NOTIFICATION_ID, notification);
     }
 
+    /**
+     * Keep service as foreground with an idle/standby notification.
+     * This prevents aggressive OEM ROMs (Flyme, MIUI, etc.) from killing the service
+     * between connections, which would destroy the BluetoothHidDevice proxy.
+     */
+    public void showIdleNotification() {
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Wiler Gamepad")
+                .setContentText("Đang chờ kết nối...")
+                .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .build();
+
+        startForeground(NOTIFICATION_ID, notification);
+    }
+
+    /**
+     * Fully remove the foreground notification and demote service.
+     * Only call this when the user explicitly exits the app.
+     */
     public void stopForegroundNotification() {
         stopForeground(STOP_FOREGROUND_REMOVE);
     }
@@ -232,7 +254,9 @@ public class BluetoothHidService extends Service implements BluetoothHidManager.
         if (state == android.bluetooth.BluetoothProfile.STATE_CONNECTED) {
             inputDispatcher.sendCurrentState();
         } else if (state == android.bluetooth.BluetoothProfile.STATE_DISCONNECTED) {
-            stopForegroundNotification();
+            // Downgrade to idle notification — keep service foreground so OEM ROMs
+            // (Flyme, MIUI, etc.) cannot kill it between sessions.
+            showIdleNotification();
         }
         for (ServiceCallback cb : callbacks) {
             cb.onConnectionStateChanged(device, state);
@@ -247,7 +271,8 @@ public class BluetoothHidService extends Service implements BluetoothHidManager.
             if (ACTION_DISCONNECT.equals(action)) {
                 Log.d(TAG, "ACTION_DISCONNECT received via BroadcastReceiver");
                 disconnect();
-                stopForegroundNotification();
+                // Keep foreground as idle — do NOT remove notification
+                showIdleNotification();
                 for (ServiceCallback cb : callbacks) {
                     cb.onConnectionStateChanged(null, android.bluetooth.BluetoothProfile.STATE_DISCONNECTED);
                 }
@@ -257,7 +282,7 @@ public class BluetoothHidService extends Service implements BluetoothHidManager.
                 BluetoothDevice dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 Log.d(TAG, "HID CONNECTION_STATE_CHANGED intent: dev = " + dev + ", state = " + state);
                 if (state == android.bluetooth.BluetoothProfile.STATE_DISCONNECTED) {
-                    stopForegroundNotification();
+                    showIdleNotification();
                 }
                 for (ServiceCallback cb : callbacks) {
                     cb.onConnectionStateChanged(dev, state);

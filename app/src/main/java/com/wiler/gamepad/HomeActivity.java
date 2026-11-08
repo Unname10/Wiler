@@ -482,10 +482,7 @@ public class HomeActivity extends AppCompatActivity implements BluetoothHidServi
                 connectedDevice = null;
                 updateConnectionVisuals();
                 populateRecentDevices();
-
-                if (hidService != null) {
-                    hidService.stopForegroundNotification();
-                }
+                // Service manages its own notification state; no action needed here
             }
 
             if (activeConnectionSheet != null) {

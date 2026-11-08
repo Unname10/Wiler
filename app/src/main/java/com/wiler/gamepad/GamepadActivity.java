@@ -49,7 +49,9 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
     private BluetoothDevice targetDevice;
     private int reconnectAttempts = 0;
     private static final int MAX_RECONNECT_ATTEMPTS = 3;
+    private boolean isIntentionalBackgroundDisconnect = false;
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable reconnectRunnable = this::retryConnection;
 
     private Dialog quickMenuDialog;
 
@@ -68,6 +70,24 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
             if (dev != null) {
                 targetDevice = dev;
                 layoutDisconnectedOverlay.setVisibility(View.GONE);
+            } else if (isIntentionalBackgroundDisconnect && targetDevice != null) {
+                // We disconnected on purpose (auto-disconnect on background). Now service is
+                // bound again — wait a bit for Bluetooth stack to settle, then reconnect.
+                isIntentionalBackgroundDisconnect = false;
+                handler.postDelayed(() -> {
+                    if (hidService != null && targetDevice != null) {
+                        boolean ok = hidService.getHidManager().connect(targetDevice);
+                        if (!ok) {
+                            // HID app may still be registering; retry once more after a delay
+                            handler.postDelayed(() -> {
+                                if (hidService != null && targetDevice != null
+                                        && hidService.getHidManager().getConnectedDevice() == null) {
+                                    hidService.getHidManager().connect(targetDevice);
+                                }
+                            }, 1500L);
+                        }
+                    }
+                }, 800L);
             }
         }
 
@@ -150,6 +170,50 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
         super.onResume();
         if (gamepadView != null) {
             gamepadView.reloadLayoutConfig();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Auto-disconnect Bluetooth when leaving GamepadActivity (if toggle is enabled)
+        PreferencesManager prefs = PreferencesManager.getInstance(this);
+        if (prefs.isAutoDisconnectOnBackground() && hidService != null) {
+            BluetoothDevice connected = hidService.getHidManager().getConnectedDevice();
+            if (connected != null) {
+                targetDevice = connected; // remember for reconnect
+                // Mark as intentional so onConnectionStateChanged won't trigger the overlay/retry
+                isIntentionalBackgroundDisconnect = true;
+                hidService.disconnect();
+            }
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // Reconnect is handled inside onServiceConnected() to avoid race conditions.
+        // If service is already bound, trigger reconnect from here as well.
+        PreferencesManager prefs = PreferencesManager.getInstance(this);
+        if (prefs.isAutoDisconnectOnBackground() && isIntentionalBackgroundDisconnect
+                && targetDevice != null && isBound && hidService != null) {
+            isIntentionalBackgroundDisconnect = false;
+            // Use a delay so the BT stack finishes teardown before we try to reconnect
+            handler.postDelayed(() -> {
+                if (hidService != null && targetDevice != null
+                        && hidService.getHidManager().getConnectedDevice() == null) {
+                    boolean ok = hidService.getHidManager().connect(targetDevice);
+                    if (!ok) {
+                        // App may still be re-registering; one more retry
+                        handler.postDelayed(() -> {
+                            if (hidService != null && targetDevice != null
+                                    && hidService.getHidManager().getConnectedDevice() == null) {
+                                hidService.getHidManager().connect(targetDevice);
+                            }
+                        }, 1500L);
+                    }
+                }
+            }, 800L);
         }
     }
 
@@ -304,9 +368,17 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
             if (state == BluetoothProfile.STATE_CONNECTED) {
                 targetDevice = device;
                 reconnectAttempts = 0;
+                isIntentionalBackgroundDisconnect = false;
+                handler.removeCallbacks(reconnectRunnable); // cancel any pending retries
                 layoutDisconnectedOverlay.setVisibility(View.GONE);
                 Toast.makeText(this, "Đã kết nối với " + (device != null ? device.getName() : "Host"), Toast.LENGTH_SHORT).show();
             } else if (state == BluetoothProfile.STATE_DISCONNECTED) {
+                // If this disconnect was triggered intentionally (auto-disconnect on background),
+                // do NOT show the overlay or trigger the standard retry mechanism.
+                if (isIntentionalBackgroundDisconnect) {
+                    return;
+                }
+
                 layoutDisconnectedOverlay.setVisibility(View.VISIBLE);
                 String name = (targetDevice != null) ? targetDevice.getName() : "Máy tính";
                 tvDisconnectTitle.setText("Mất kết nối với " + name);
@@ -315,7 +387,7 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
                 if (prefs.isAutoReconnect() && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                     reconnectAttempts++;
                     tvDisconnectSubtitle.setText(String.format(Locale.US, "Đang tự động kết nối lại... (Lần %d/%d)", reconnectAttempts, MAX_RECONNECT_ATTEMPTS));
-                    handler.postDelayed(this::retryConnection, 2000L);
+                    handler.postDelayed(reconnectRunnable, 2000L);
                 } else {
                     tvDisconnectSubtitle.setText("Không có kết nối đến thiết bị.");
                 }
@@ -335,6 +407,15 @@ public class GamepadActivity extends AppCompatActivity implements BluetoothHidSe
 
         if (targetDevice != null) {
             tvDisconnectSubtitle.setText("Đang gửi yêu cầu kết nối...");
+            // Check current HID connection state before calling connect to avoid
+            // sending connect while BT stack is still in STATE_DISCONNECTING.
+            int currentState = hidService.getHidManager().getConnectionState(targetDevice);
+            if (currentState == BluetoothProfile.STATE_DISCONNECTING
+                    || currentState == BluetoothProfile.STATE_CONNECTING) {
+                // Stack is busy; reschedule one more time
+                handler.postDelayed(reconnectRunnable, 1500L);
+                return;
+            }
             boolean initiated = hidService.getHidManager().connect(targetDevice);
             if (!initiated) {
                 tvDisconnectSubtitle.setText("Kết nối thất bại. Hãy kiểm tra lại PC.");

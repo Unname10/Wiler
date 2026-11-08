@@ -20,6 +20,7 @@ public class PreferencesManager {
     private static final String KEY_BUTTON_SCALE = "key_button_scale";
     private static final String KEY_VIBRATION = "key_vibration";
     private static final String KEY_AUTO_RECONNECT = "key_auto_reconnect";
+    private static final String KEY_AUTO_DISCONNECT_BG = "key_auto_disconnect_bg";
     private static final String KEY_PROFILE = "key_profile";
     private static final String KEY_LAST_DEVICE_ADDR = "key_last_device_addr";
     private static final String KEY_LAST_DEVICE_NAME = "key_last_device_name";
@@ -102,6 +103,17 @@ public class PreferencesManager {
 
     public void setAutoReconnect(boolean enabled) {
         prefs.edit().putBoolean(KEY_AUTO_RECONNECT, enabled).apply();
+    }
+
+    /**
+     * Auto-disconnect Bluetooth when GamepadActivity goes to background (default: false)
+     */
+    public boolean isAutoDisconnectOnBackground() {
+        return prefs.getBoolean(KEY_AUTO_DISCONNECT_BG, false);
+    }
+
+    public void setAutoDisconnectOnBackground(boolean enabled) {
+        prefs.edit().putBoolean(KEY_AUTO_DISCONNECT_BG, enabled).apply();
     }
 
     /**

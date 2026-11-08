@@ -53,6 +53,7 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
     private Slider sliderButtonScale;
     private SwitchMaterial switchDynamicJoystick;
     private SwitchMaterial switchVibration;
+    private SwitchMaterial switchAutoDisconnectBg;
     private ImageView btnCloseSettings;
 
     private PreferencesManager prefs;
@@ -85,6 +86,7 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
         sliderButtonScale = view.findViewById(R.id.sliderButtonScale);
         switchDynamicJoystick = view.findViewById(R.id.switchDynamicJoystick);
         switchVibration = view.findViewById(R.id.switchVibration);
+        switchAutoDisconnectBg = view.findViewById(R.id.switchAutoDisconnectBg);
         btnCloseSettings = view.findViewById(R.id.btnCloseSettings);
         btnSheetPresetDefault = view.findViewById(R.id.btnSheetPresetDefault);
         btnSheetPreset1 = view.findViewById(R.id.btnSheetPreset1);
@@ -165,6 +167,12 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
             if (listener != null) {
                 listener.onVibrationChanged(isChecked);
             }
+        });
+
+        // Setup Auto-disconnect on background
+        switchAutoDisconnectBg.setChecked(prefs.isAutoDisconnectOnBackground());
+        switchAutoDisconnectBg.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            prefs.setAutoDisconnectOnBackground(isChecked);
         });
     }
 

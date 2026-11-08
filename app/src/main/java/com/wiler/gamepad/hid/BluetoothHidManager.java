@@ -249,11 +249,40 @@ public class BluetoothHidManager {
     }
 
     @SuppressLint("MissingPermission")
-    public synchronized boolean connect(BluetoothDevice device) {
+    public synchronized int getConnectionState(BluetoothDevice device) {
         if (hidDevice == null || device == null || !hasPermissions()) {
+            return BluetoothProfile.STATE_DISCONNECTED;
+        }
+        try {
+            return hidDevice.getConnectionState(device);
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting connection state", e);
+            return BluetoothProfile.STATE_DISCONNECTED;
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    public synchronized boolean connect(BluetoothDevice device) {
+        if (device == null || !hasPermissions()) {
+            Log.w(TAG, "connect() failed: null device or missing permissions");
             return false;
         }
-        return hidDevice.connect(device);
+        if (hidDevice == null) {
+            Log.w(TAG, "connect() failed: hidDevice proxy is null");
+            return false;
+        }
+        if (!isAppRegistered) {
+            Log.w(TAG, "connect() failed: HID application is not registered yet");
+            return false;
+        }
+        try {
+            boolean success = hidDevice.connect(device);
+            Log.i(TAG, "hidDevice.connect(" + device.getAddress() + ") result: " + success);
+            return success;
+        } catch (Exception e) {
+            Log.e(TAG, "Exception during hidDevice.connect", e);
+            return false;
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -262,24 +291,30 @@ public class BluetoothHidManager {
             return false;
         }
         boolean success = false;
-        if (connectedDevice != null) {
+        BluetoothDevice target = connectedDevice;
+        if (target != null) {
             try {
-                success = hidDevice.disconnect(connectedDevice);
-                Log.i(TAG, "hidDevice.disconnect(connectedDevice) result: " + success);
+                success = hidDevice.disconnect(target);
+                Log.i(TAG, "hidDevice.disconnect(connectedDevice: " + target.getAddress() + ") result: " + success);
             } catch (Exception e) {
-                Log.e(TAG, "Error disconnecting connectedDevice", e);
+                Log.e(TAG, "Error disconnecting target device", e);
             }
-        }
-        try {
-            java.util.List<BluetoothDevice> devs = hidDevice.getConnectedDevices();
-            if (devs != null) {
-                for (BluetoothDevice d : devs) {
-                    hidDevice.disconnect(d);
-                    success = true;
+        } else {
+            try {
+                java.util.List<BluetoothDevice> devs = hidDevice.getConnectedDevices();
+                if (devs != null && !devs.isEmpty()) {
+                    for (BluetoothDevice d : devs) {
+                        try {
+                            success = hidDevice.disconnect(d);
+                            Log.i(TAG, "hidDevice.disconnect(list device: " + d.getAddress() + ") result: " + success);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error disconnecting listed device", e);
+                        }
+                    }
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Error getting connected devices on disconnect", e);
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Error disconnecting all connected devices", e);
         }
         connectedDevice = null;
         return success;
