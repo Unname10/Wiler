@@ -97,7 +97,7 @@
                     android:layout_height="24dp"
                     android:layout_alignParentStart="true"
                     android:layout_centerVertical="true"
-                    android:src="@drawable/ic_gamepad"
+                    android:src="@drawable/ic_logo"
                     app:tint="#22C55E" />
 
                 <TextView
@@ -693,7 +693,7 @@
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/ic_gamepad"
+                    android:src="@drawable/ic_logo"
                     app:tint="#889988" />
 
                 <LinearLayout

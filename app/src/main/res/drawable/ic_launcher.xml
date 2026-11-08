@@ -1,21 +1,106 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path
-        android:fillColor="#107C10"
-        android:pathData="M0,0h108v108h-108z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M38,44h32c4.4,0 8,3.6 8,8v12c0,4.4 -3.6,8 -8,8h-32c-4.4,0 -8,-3.6 -8,-8v-12c0,-4.4 3.6,-8 8,-8z" />
-    <path
-        android:fillColor="#107C10"
-        android:pathData="M46,54h-4v4h-4v4h4v4h4v-4h4v-4h-4z" />
-    <path
-        android:fillColor="#107C10"
-        android:pathData="M66,56m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
-    <path
-        android:fillColor="#107C10"
-        android:pathData="M72,62m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="1024dp"
+    android:height="1024dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+
+    <!-- Background Linear Gradient -->
+    <path android:pathData="M0,0h1024v1024h-1024z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0"
+                android:startY="0"
+                android:endX="1024"
+                android:endY="1024"
+                android:type="linear">
+                <item android:color="#FF1BA11B" android:offset="0.0" />
+                <item android:color="#FF107C10" android:offset="0.55" />
+                <item android:color="#FF0A5A0A" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Radial Glow at (300, 220) -->
+    <path android:pathData="M0,0h1024v1024h-1024z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="300"
+                android:centerY="220"
+                android:gradientRadius="760"
+                android:type="radial">
+                <item android:color="#38FFFFFF" android:offset="0.0" />
+                <item android:color="#00FFFFFF" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Gamepad Graphics Group -->
+    <group
+        android:pivotX="512"
+        android:pivotY="540"
+        android:scaleX="0.82"
+        android:scaleY="0.82"
+        android:translateY="31">
+
+        <!-- Shadow (translateY = 16) -->
+        <group android:translateY="16">
+            <path
+                android:fillColor="#4D063D06"
+                android:pathData="M342,352H682C760,352 800,392 828,470L872,610C892,676 862,730 806,730C764,730 740,706 716,670L690,632C678,614 662,606 640,606H384C362,606 346,614 334,632L308,670C284,706 260,730 218,730C162,730 132,676 152,610L196,470C224,392 264,352 342,352Z" />
+        </group>
+
+        <!-- White Gamepad Body -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M342,352H682C760,352 800,392 828,470L872,610C892,676 862,730 806,730C764,730 740,706 716,670L690,632C678,614 662,606 640,606H384C362,606 346,614 334,632L308,670C284,706 260,730 218,730C162,730 132,676 152,610L196,470C224,392 264,352 342,352Z" />
+
+        <!-- D-Pad Vertical (width: 40, height: 120, rx: 9) -->
+        <path
+            android:fillColor="#107C10"
+            android:pathData="M319,430h22a9,9 0 0,1 9,9v102a9,9 0 0,1 -9,9h-22a9,9 0 0,1 -9,-9v-102a9,9 0 0,1 9,-9z" />
+
+        <!-- D-Pad Horizontal (width: 120, height: 40, rx: 9) -->
+        <path
+            android:fillColor="#107C10"
+            android:pathData="M279,470h102a9,9 0 0,1 9,9v22a9,9 0 0,1 -9,9h-102a9,9 0 0,1 -9,-9v-22a9,9 0 0,1 9,-9z" />
+
+        <!-- Buttons ABXY -->
+        <path
+            android:fillColor="#107C10"
+            android:pathData="M676,448a18,18 0 1,0 36,0a18,18 0 1,0 -36,0z" />
+        <path
+            android:fillColor="#107C10"
+            android:pathData="M676,532a18,18 0 1,0 36,0a18,18 0 1,0 -36,0z" />
+        <path
+            android:fillColor="#107C10"
+            android:pathData="M634,490a18,18 0 1,0 36,0a18,18 0 1,0 -36,0z" />
+        <path
+            android:fillColor="#107C10"
+            android:pathData="M718,490a18,18 0 1,0 36,0a18,18 0 1,0 -36,0z" />
+
+        <!-- Center Pill Button (width: 60, height: 22, rx: 11) -->
+        <path
+            android:fillColor="#107C10"
+            android:pathData="M493,474h38a11,11 0 0,1 11,11a11,11 0 0,1 -11,11h-38a11,11 0 0,1 -11,-11a11,11 0 0,1 11,-11z" />
+
+        <!-- Wireless Dot -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M496,310a16,16 0 1,0 32,0a16,16 0 1,0 -32,0z" />
+
+        <!-- Wireless Wave 1 -->
+        <path
+            android:pathData="M469.1,274A56,56 0 0,1 554.9,274"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="22" />
+
+        <!-- Wireless Wave 2 -->
+        <path
+            android:pathData="M432.3,243.2A104,104 0 0,1 591.7,243.2"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="22" />
+    </group>
 </vector>
